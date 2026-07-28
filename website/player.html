@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Profile</title>
+    <link rel="stylesheet" src="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="script.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Player Header Section -->
+        <div class="profile-header">
+
+            <div class="player-info">
+                <div>
+                    <div class="player-name-section">
+                       
+                        <div class="team-logo-container">
+                            <img src="" alt="Team Logo" class="team-logo" id="teamLogo">
+                            <p class="team-name" id="teamName">Team Name</p>
+
+                    </div>
+                        <h1 class="player-name" id="playerName">ProGamer</h1>
+                        <img src="" alt="Role" class="role-icon" id="roleIcon">
+                    </div>
+                </div>
+
+                <div class="stats-cards-container">
+                    <div class="stats-card">
+                        <div class="stats-grid">
+                            <div class="stat">
+                                <span class="stat-label">Total Eliminations</span>
+                                <span class="stat-value" id="totalEliminations">1,247</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Total Assists</span>
+                                <span class="stat-value" id="totalAssists">892</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Total Deaths</span>
+                                <span class="stat-value" id="totalDeaths">456</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Total Damage</span>
+                                <span class="stat-value" id="totalDamage">45.2k</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Total Healing</span>
+                                <span class="stat-value" id="totalHealing">12.5k</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Total Mitigation</span>
+                                <span class="stat-value" id="totalMitigation">245</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stats-card">
+                        <div class="stats-grid">
+                            <div class="stat">
+                                <span class="stat-label">Avg Eliminations</span>
+                                <span class="stat-value" id="avgEliminations">5.1</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Avg Assists</span>
+                                <span class="stat-value" id="avgAssists">3.6</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Avg Deaths</span>
+                                <span class="stat-value" id="avgDeaths">1.9</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Avg Damage</span>
+                                <span class="stat-value" id="avgDamage">185k</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Avg Healing</span>
+                                <span class="stat-value" id="avgHealing">51k</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Avg Mitigation</span>
+                                <span class="stat-value" id="avgMitigation">1.0k</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Graph Section -->
+        <div class="stats-graph-section">
+            <div class="graph-header">
+                <h2>Stats Over Time</h2>
+                <div class="stat-selector">
+                    <select id="statSelect" class="stat-dropdown">
+                        <option value="eliminations">Eliminations</option>
+                        <option value="assists">Assists</option>
+                        <option value="deaths">Deaths</option>
+                        <option value="damage">Damage</option>
+                        <option value="healing">Healing</option>
+                        <option value="mitigation">Mitigation</option>
+                    </select>
+                </div>
+            </div>
+            <div class="graph-container">
+                <canvas id="statsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Match History Section -->
+        <div class="matches-section">
+            <div class="matches-header">
+                <h2>Match History</h2>
+            </div>
+            <table class="matches-table" id="matchesTable">
+                <thead>
+                    <tr>
+                        <th colspan="2" width = 30%>Tournament</th>
+                        <th>Date</th>
+                        <th colspan="2">Opponent</th>
+                        <th colspan="2">Score</th>
+                    </tr>
+                </thead>
+                <tbody id="matchesTableBody">
+                </tbody>
+                <tfoot id="matchesTableFoot">
+                </tfoot>
+            </table>    
+        </div>
+    
+        <!-- Hero Profile Section-->
+        <div class="heroes-section">
+            <div class="heroes-label">
+                <h2>Preferred Heroes</h2>
+            </div>
+            <div class="heroes-grid" id="heroesContainer">
+                <div class="hero-card">
+                    <img src="" alt="Hero 1" class="hero-image">
+                    <div class="hero-name">Hero One</div>
+                </div>
+                <div class="hero-card">
+                    <img src="" alt="Hero 2" class="hero-image">
+                    <div class="hero-name">Hero Two</div>
+                </div>
+                <div class="hero-card">
+                    <img src="" alt="Hero 3" class="hero-image">
+                    <div class="hero-name">Hero Three</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map Graph Section -->
+        <div class="map-graph-section">
+            <div class="graph-header">
+                <h2>Maps</h2>
+            </div>
+            <div class="graph-container">
+                <canvas id="mapChart"></canvas>
+            </div>
+        </div>
+
+
+        <!-- End of Main Content -->
+    </div>
+</body>
+</html>
