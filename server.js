@@ -42,7 +42,7 @@ app.get('/api/players/:id', async (req,res) => {
 
 app.get('/players', (req,res) => {
     console.log(__dirname)
-    res.sendFile('player.html', {root: __dirname })
+    res.sendFile('/website/player.html', {root: __dirname })
 })
 
 // PORT
