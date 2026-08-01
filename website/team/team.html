@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="title">Team Profile</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Team Header Section -->
+        <div class="profile-header">
+            <div class="team-info">
+                <div>
+                    <div class="team-name-section">
+                        <div class="team-name-row">
+                            <img src="" alt="Team Logo" class="team-icon" id="teamLogo">
+                            <h1 class="team-name" id="teamName">Team</h1>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="roster-section">
+                    <div class="roster-header">
+                        <h2>Roster</h2>
+                    </div>
+                    <table class="roster-table" id="rosterTable">
+                        <thead>
+                            <tr>
+                                <th width = 10% class="icon-column">Role</th>
+                                <th>Name</th>
+                                <th width = 10%>Link</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rosterTableBody">
+                        </tbody>
+                        <tfoot id="rosterTableFoot"></tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        
+
+
+    <!-- Recent Matches Section -->
+    <div class="matches-section">
+        <div class="matches-header">
+            <h2>Recent Matches</h2>
+        </div>
+        <table class="matches-table" id="matchesTable">
+            <thead>
+                <tr>
+                    <th colspan="2" width = 30%>Tournament</th>
+                    <th>Date</th>
+                    <th colspan="2">Opponent</th>
+                    <th colspan="2">Score</th>
+                </tr>
+            </thead>
+            <tbody id="matchesTableBody">
+            </tbody>
+            <tfoot id="matchesTableFoot">
+            </tfoot>
+        </table>
+    </div>
+
+    <!-- Hero Bans -->
+    <div class="ban-graph-section">
+        <div class="graph-header">
+            <h2>Hero Bans</h2>
+        </div>
+        <div class="graph-container">
+            <canvas id="banChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Map Stats -->
+    <div class="map-graph-section">
+        <div class="graph-header">
+            <h2>Map Results</h2>
+        </div>
+        <div class="graph-container">
+            <canvas id="mapChart"></canvas>
+        </div>
+    </div>
+</div>
+ </body>
+</html>

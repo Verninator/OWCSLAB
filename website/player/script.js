@@ -18,14 +18,40 @@ function formatCompactNumber(number) {
 
 // Fetch player data from API and populate the page
 async function loadPlayerData() {
-    const data = await fetch("http://localhost:3000/api/players/28")
-    .then(response => response.json())
-    .then(data => {return data;})
-    .catch(error => alert(error));
+    // Determine player identifier from path (`/players/:id` or `/players/:name`) or `?id=` query
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    let playerIdentifier = null;
+    if (pathParts.length >= 2 && pathParts[0].toLowerCase() === 'players') {
+        playerIdentifier = pathParts[1];
+    } else {
+        const params = new URLSearchParams(window.location.search);
+        playerIdentifier = params.get('id');
+    }
+
+    if (!playerIdentifier) {
+        alert('No player specified in URL');
+        return;
+    }
+
+    const data = await fetch(`/api/players/${encodeURIComponent(playerIdentifier)}`)
+        .then(response => response.json())
+        .then(data => { return data; })
+        .catch(error => { alert(error); return null; });
+
+    if (!data) return;
+
+
+    window.top.document.title  = data.player_details.name
+
 
     // Update player name (always has a value)
+
+
+
     const playerNameEl = document.getElementById('playerName');
     if (playerNameEl) playerNameEl.textContent = data.player_details.name;
+
+    
     // Update role icon (always has a value)
     const roleIconEl = document.getElementById('roleIcon');
     let roleIconSrc;
@@ -46,7 +72,12 @@ async function loadPlayerData() {
     
     // Update team logo (always has a value)
     const teamLogoEl = document.getElementById('teamLogo');
-    if (teamLogoEl) teamLogoEl.src = data.player_details.team_icon;
+    if (teamLogoEl) teamLogoEl.src = "../" + data.player_details.team_icon;
+    // Make team logo/name link to the team page
+    const teamLinkEl = document.getElementById('teamLink');
+    if (teamLinkEl && data.player_details.team) {
+        teamLinkEl.href = `/teams/${encodeURIComponent(data.player_details.team)}`;
+    }
     
     
     // Update total stats (all have values)
@@ -90,7 +121,7 @@ async function loadPlayerData() {
             const heroCard = document.createElement('div');
             heroCard.className = 'hero-card';
             heroCard.innerHTML = `
-                <img src="${hero.icon}" alt="${hero.name}" class="hero-image">
+                <img src="../${hero.icon}" alt="${hero.name}" class="hero-image">
                 <div class="hero-name">${hero.name}</div>
             `;
             heroesContainer.appendChild(heroCard);
@@ -125,10 +156,10 @@ function populateMatchesTable(matches) {
         let date = new Date(match.date)
         row.innerHTML = `
             
-            <td class="icon-column"><img src=${match.tournament_icon} class="match-icon"></td>
+            <td class="icon-column"><img src="../${match.tournament_icon}" class="match-icon"></td>
             <td>${match.tournament}</td>
             <td><time datetime=${date}>${date.toDateString()}</time></td>
-            <td class="icon-column"><img src=${match.opponent_icon} alt=${match.opponent} class="match-icon"></td>
+            <td class="icon-column"><a href="../teams/${match.opponent}"><img src="${match.opponent_icon ? '../' + match.opponent_icon : ''}" class="match-icon"></a></td>
             <td>${match.opponent}</td>
             <td>${match.team_score}:${match.opponent_score}</td>
             <td><a href=${match.ref_link}>🔗</a></td>

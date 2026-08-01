@@ -1,0 +1,264 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: 1fr 4fr 4fr 1fr;
+    grid-template-areas:
+        ". statcard statcard ."
+        ". graph graph ."
+        ". matches matches ."
+        ". bans bans ."
+        ". maps maps .";
+    row-gap: 24px;
+    column-gap: 24px;
+    margin: 0;
+    align-items: stretch;
+}
+
+.profile-header {
+    display: flex;
+    gap: 20px;
+    background: #1a1f3a;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    margin-bottom: 0;
+    align-items: flex-start;
+    border: 2px solid #84af8f;
+    grid-area: statcard;
+}
+
+
+.profile-header { display: flex; align-items: flex-start; gap: 24px; }
+.profile-header .team-info { flex: 1; }
+
+/* ensure profile (statcard) and roster stretch to same row height */
+.profile-header, .roster-section { align-self: stretch; }
+
+      
+
+.team-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.team-info > div:first-child {
+    margin-bottom: 20px;
+}
+
+.roster-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+.team-name-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 10px;
+    width: 100%;
+    text-align: center;
+}
+
+.team-name-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: center;
+}
+
+.team-name {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: #00ff41;
+    margin: 0;
+    text-align: center;
+}
+
+
+.team-icon {
+    height: 40px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: #1a1f3a;
+}
+
+.team-icon-container {
+    position: relative;
+    display: inline-block;
+}
+.roster-section {
+    background: #1a1f3a;
+    border-radius: 15px;
+    padding: 30px;
+    margin-top: 0;
+    grid-area: roster;
+}
+
+.roster-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+
+.roster-header h2 {
+    color: #00ff41;
+    font-size: 1.5em;
+    margin: 0;
+}
+
+.roster-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.roster-table thead {
+    background: #2a2f4a;
+    border-bottom: 2px solid #84af8f;
+    text-align: left;
+}
+
+.roster-table th {
+    padding: 12px;
+    text-align: left;
+    color: #ffffff;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85em;
+    letter-spacing: 0.5px;
+}
+
+.icon-column {
+    width: 50px;
+    text-align: center !important;
+}
+
+.roster-table td {
+    text-align: left;
+    padding: 12px;
+    color: #ffffff;
+    border-bottom: 1px solid #2a2f4a;
+    font-size: 0.95em;
+}
+
+.roster-icon {
+            max-height: 30px;
+            max-width: 30px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #1a1f3a;
+        }
+
+.roster-table tbody tr:hover {
+    background: #2a2f4a;
+}
+
+.roster-table tbody tr:hover .roster-icon {
+    background: #2a2f4a;
+}
+
+.roster-table tfoot {
+    border-top: 2px solid #84af8f;
+    background: #2a2f4a;
+    font-weight: 600;
+}
+
+.roster-table tfoot td {
+    padding: 12px;
+    color: #ffffff;
+    border-bottom: none;
+}
+
+/* aliases to match player.html naming */
+.matches-section {
+    background: #1a1f3a;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    margin-top: 30px;
+    border: 2px solid #84af8f;
+    grid-area: matches;
+}
+
+.matches-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.matches-header h2 { color: #00ff41; font-size: 1.5em; margin: 0; }
+
+.matches-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+.matches-table thead { background: #2a2f4a; border-bottom: 2px solid #84af8f; text-align: left; }
+.matches-table th { padding: 12px; text-align: left; color: #ffffff; font-weight: 600; text-transform: uppercase; font-size: 0.85em; letter-spacing: 0.5px; }
+.matches-table td { text-align: left; padding: 12px; color: #ffffff; border-bottom: 1px solid #2a2f4a; font-size: 0.95em; }
+.match-icon { max-height: 30px; max-width: 30px; border-radius: 0; object-fit: cover; background: #1a1f3a; transition: background 0.15s ease; }
+.matches-table tbody tr:hover { background: #2a2f4a; }
+.matches-table tbody tr:hover .match-icon { background: #2a2f4a; }
+.matches-table tfoot { border-top: 2px solid #84af8f; background: #2a2f4a; font-weight: 600; }
+.matches-table tfoot td { padding: 12px; color: #ffffff; border-bottom: none; }
+
+.graph-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.graph-header h2 {
+    color: #00ff41;
+    font-size: 1.5em;
+    margin: 0;
+}
+
+
+.graph-container { position: relative; height: 350px; width: 100%; margin-top: 15px; }
+
+.ban-graph-section {
+    background: #1a1f3a;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    margin-top: 0;
+    border: 2px solid #84af8f;
+    gap: 20px;
+    grid-area: bans;
+}
+
+.map-graph-section {
+    background: #1a1f3a;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    margin-top: 0;
+    border: 2px solid #84af8f;
+    gap: 20px;
+    grid-area: maps;
+}
+
+@media (max-width: 768px) {
+    .profile-header { flex-direction: column; align-items: center; }
+    .team-name { font-size: 2em; }
+    .stats-grid { grid-template-columns: repeat(3, 1fr); }
+    .heroes-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+    .roster-header { flex-direction: column; align-items: flex-start; gap: 15px; }
+    .roster-table { font-size: 0.85em; }
+    .roster-table th, .roster-table td { padding: 8px; }
+    .stats-graph-section { padding: 20px; }
+    .graph-header { flex-direction: column; align-items: flex-start; gap: 15px; }
+    .graph-container { height: 250px; }
+}

@@ -13,7 +13,7 @@ body {
 
 .container {
     display: grid;
-    grid-template-columns: 1fr 8fr 180px 40px;
+    grid-template-columns: 1fr 8fr 180px 1fr;
     grid-template-areas:
     '. statcard  heroes .'
     '. graph  graph .'
