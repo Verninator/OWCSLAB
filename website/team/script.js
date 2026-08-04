@@ -46,10 +46,47 @@ async function loadTeamData() {
 
   populateRoster(data.roster || []);
   populateMatchesTable(data.matches || []);
-  initializeTeamStatsChart(data.summary || {});
+  populateTournaments(data.tournaments || []);
   initializeMapChart(data.maps || []);
   initializeBanChart(data.bans);
   setupChartSelector();
+}
+
+function populateTournaments(tournaments) {
+  const tbody = document.getElementById('tournamentsTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (!tournaments || tournaments.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px">No recent tournament data available</td></tr>';
+    return;
+  }
+
+  tournaments.forEach(tournament => {
+    const row = document.createElement('tr');
+    const startDate = tournament.start_date ? new Date(tournament.start_date) : null;
+    const endDate = tournament.end_date ? new Date(tournament.end_date) : null;
+    const placement = tournament.placement || '';
+    const normalizedPlacement = placement.toString().toLowerCase();
+    let placementClass = '';
+    if (normalizedPlacement.includes('gold') || normalizedPlacement.includes('1st') || /^1$/.test(normalizedPlacement)) {
+      placementClass = 'gold';
+    } else if (normalizedPlacement.includes('silver') || normalizedPlacement.includes('2nd') || /^2$/.test(normalizedPlacement)) {
+      placementClass = 'silver';
+    } else if (normalizedPlacement.includes('bronze') || normalizedPlacement.includes('3rd') || /^3$/.test(normalizedPlacement)) {
+      placementClass = 'bronze';
+    }
+
+    row.className = placementClass;
+    row.innerHTML = `
+      <td class="icon-column"><img src="${tournament.icon ? '../' + tournament.icon : ''}" class="match-icon"></td>
+      <td>${tournament.name || ''}</td>
+      <td>${startDate ? startDate.toDateString() : ''}</td>
+      <td>${endDate ? endDate.toDateString() : ''}</td>
+      <td>${placement}</td>
+    `;
+    tbody.appendChild(row);
+  });
 }
 
 function populateRoster(roster) {
@@ -93,6 +130,15 @@ function populateMatchesTable(matches) {
 
   matches.forEach((match, index) => {
     const row = document.createElement('tr');
+    const teamScore = Number(match.team_score);
+    const opponentScore = Number(match.opponent_score);
+    if (!Number.isNaN(teamScore) && !Number.isNaN(opponentScore)) {
+      if (teamScore > opponentScore) {
+        row.classList.add('match-win');
+      } else if (teamScore < opponentScore) {
+        row.classList.add('match-loss');
+      }
+    }
     let date = match.date ? new Date(match.date) : null;
     row.innerHTML = `
       <td class="icon-column"><img src="${match.tournament_icon ? '../' + match.tournament_icon : ''}" class="match-icon"></td>
@@ -107,31 +153,6 @@ function populateMatchesTable(matches) {
   });
 }
 
-function initializeTeamStatsChart(summary) {
-  const ctx = document.getElementById('teamStatsChart');
-  if (!ctx) return;
-  const wins = summary.wins || 0;
-  const losses = summary.losses || 0;
-  const draws = summary.draws || 0;
-
-  if (teamStatsChart) teamStatsChart.destroy();
-
-  teamStatsChart = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: ['Wins','Losses','Draws'],
-      datasets: [{
-        data: [wins, losses, draws],
-        backgroundColor: ['#00a429','#a52700','#e7e294']
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { color: '#ffffff' } }, tooltip: { backgroundColor: '#1a1f3a', titleColor: '#fff', bodyColor: '#fff' } }
-    }
-  });
-}
 
 function initializeMapChart(maps) {
   const ctx = document.getElementById('mapChart');
@@ -155,9 +176,9 @@ function initializeMapChart(maps) {
     data: {
       labels: labels,
       datasets: [
-        { label: 'Won', data: wonData, backgroundColor: '#00a429' },
-        { label: 'Draw', data: drawData, backgroundColor: '#e7e294' },
-        { label: 'Lost', data: lostData, backgroundColor: '#a52700' }
+        { label: 'Won', data: wonData, backgroundColor: '#2ecc71' },
+        { label: 'Draw', data: drawData, backgroundColor: 'rgb(231, 226, 148)' },
+        { label: 'Lost', data: lostData, backgroundColor: '#e74c3c' }
       ]
     },
     options: {
@@ -196,8 +217,8 @@ function initializeBanChart(bans) {
     data: {
       labels: labels,
       datasets: [
-        { label: 'By', data: forData, backgroundColor: '#00a429' },
-        { label: 'Against', data: againstData, backgroundColor: '#a52700' }
+        { label: 'By', data: forData, backgroundColor: '#2ecc71' },
+        { label: 'Against', data: againstData, backgroundColor: '#e74c3c' }
       ]
     },
     options: {
@@ -210,7 +231,13 @@ function initializeBanChart(bans) {
       },
       scales: {
         x: { stacked: true },
-        y: { stacked: true, ticks: { color: '#fff' } }
+        y: {
+          stacked: true,
+          ticks: {
+            color: '#fff'
+          },
+          grid: { display: false }
+        }
       }
     }
   });

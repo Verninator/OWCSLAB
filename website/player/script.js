@@ -153,16 +153,24 @@ function populateMatchesTable(matches) {
     // Populate match rows
     matches.forEach((match, index) => {
         const row = document.createElement('tr');
+        const teamScore = Number(match.team_score);
+        const opponentScore = Number(match.opponent_score);
+        if (!Number.isNaN(teamScore) && !Number.isNaN(opponentScore)) {
+            if (teamScore > opponentScore) {
+                row.classList.add('match-win');
+            } else if (teamScore < opponentScore) {
+                row.classList.add('match-loss');
+            }
+        }
         let date = new Date(match.date)
         row.innerHTML = `
-            
             <td class="icon-column"><img src="../${match.tournament_icon}" class="match-icon"></td>
             <td>${match.tournament}</td>
-            <td><time datetime=${date}>${date.toDateString()}</time></td>
+            <td><time datetime="${date.toISOString()}">${date.toDateString()}</time></td>
             <td class="icon-column"><a href="../teams/${match.opponent}"><img src="${match.opponent_icon ? '../' + match.opponent_icon : ''}" class="match-icon"></a></td>
             <td>${match.opponent}</td>
             <td>${match.team_score}:${match.opponent_score}</td>
-            <td><a href=${match.ref_link}>🔗</a></td>
+            <td><a href="${match.ref_link}">🔗</a></td>
         `;
         tbody.appendChild(row);
     });
@@ -219,13 +227,13 @@ function renderStatChart(statName) {
                 {
                     label: `${statName.charAt(0).toUpperCase() + statName.slice(1)}`,
                     data: Data,
-                    borderColor: '#00ff41',
-                    backgroundColor: 'rgba(0, 255, 65, 0.1)',
+                    borderColor: '#2ecc71',
+                    backgroundColor: 'rgba(46, 204, 113, 0.22)',
                     borderWidth: 3,
                     fill: true,
                     tension: 0.4,
-                    pointBackgroundColor: '#00ff41',
-                    pointBorderColor: '#00ff41',
+                    pointBackgroundColor: '#2ecc71',
+                    pointBorderColor: '#2ecc71',
                     pointRadius: 4,
                     pointHoverRadius: 6
                 }
@@ -344,7 +352,7 @@ function renderMapChart() {
                 {
                     label: `Won`,
                     data: wonData,
-                    backgroundColor: '#00a429',
+                    backgroundColor: '#2ecc71',
                     stack: 'Stack 0'
                 },
                 {
@@ -356,7 +364,7 @@ function renderMapChart() {
                 {
                     label: `Lost`,
                     data: lostData,
-                    backgroundColor: '#a52700',
+                    backgroundColor: '#e74c3c',
                     stack: 'Stack 0'
                 }
             ]

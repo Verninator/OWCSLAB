@@ -8,12 +8,84 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
     min-height: 100vh;
-    padding: 20px;
+    padding: 0;
+}
+
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: #14182d;
+    padding: 12px 20px;
+    margin: 0;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    position: sticky;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+    border-bottom: 4px solid #2ecc71;
+}
+
+.topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.topbar-logo {
+    width: 40px;
+    height: 40px;
+    background: #2ecc71;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0a0e27;
+    font-weight: 700;
+    font-size: 0.85em;
+}
+
+.topbar-site-name {
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.topbar-links {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.topbar-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 14px;
+    background: #14182d;
+    color: #2ecc71;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.topbar-link:hover {
+    background: #1f2539;
+    color: #72f194;
+}
+
+a {
+    color: #2ecc71;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #72f194;
+    text-decoration: underline;
 }
 
 .container {
     display: grid;
-    grid-template-columns: 1fr 8fr 180px 1fr;
+    grid-template-columns: 0.25fr 8.75fr 180px 0.25fr;
     grid-template-areas:
     '. statcard  heroes .'
     '. graph  graph .'
@@ -22,18 +94,280 @@ body {
     row-gap: 20px;
     column-gap: 20px;
     margin: 0;
+    padding: 16px 0;
+}
+.site-footer {
+    background: #14182d;
+    border-top: 4px solid #2ecc71;
+    padding: 16px 20px;
+    margin-top: 16px;
+    color: #ffffff;
+    width: 100%;
+}
+
+.footer-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.footer-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.footer-logo {
+    width: 32px;
+    height: 32px;
+    background: #2ecc71;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0a0e27;
+    font-weight: 700;
+}
+
+.footer-links {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.footer-links a {
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.footer-links a:hover {
+    text-decoration: underline;
+}
+
+.page-content {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 24px 20px 40px;
+}
+
+.player-list-intro {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.player-list-intro h1,
+.player-list-intro p {
+    color: #ffffff;
+}
+
+.table-search {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin: 12px 0;
+}
+
+.table-search label {
+    color: #c7d2ff;
+    font-size: 0.95rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.table-search input {
+    min-width: 240px;
+    max-width: 100%;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: #0f1427;
+    color: #ffffff;
+    border-radius: 0;
+}
+
+.table-search input:focus {
+    outline: none;
+    border-color: #2ecc71;
+    box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.12);
+}
+
+.player-table-section {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 20px;
+    margin-bottom: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    overflow-x: auto;
+}
+
+.stats-table {
+    width: 100%;
+    min-width: 940px;
+    border-collapse: collapse;
+    overflow: hidden;
+    background: #12172d;
+}
+
+.stats-table th,
+.stats-table td {
+    padding: 14px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    color: #e5e7ff;
+    text-align: left;
+}
+
+.stats-table th {
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+    background: rgba(255, 255, 255, 0.05);
+    white-space: nowrap;
+}
+
+.stats-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.stats-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.team-icon-cell {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    display: block;
+}
+
+.team-icon-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 42px;
+}
+
+.sortable {
+    display: table-cell;
+    vertical-align: middle;
+    padding: 0;
+}
+
+.sortable > span {
+    margin-left: 6px;
+}
+
+.sort-arrow {
+    color: #2ecc71;
+    font-size: 0.8em;
+}
+
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.section-header h2 {
+    color: #00ff41;
+    font-size: 1.25rem;
+    margin: 0;
+}
+
+.section-meta {
+    color: #c7d2ff;
+    font-size: 0.95rem;
+}
+
+.stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    overflow: hidden;
+    background: #12172d;
+}
+
+.stats-table th,
+.stats-table td {
+    padding: 14px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    color: #e5e7ff;
+    text-align: left;
+}
+
+.stats-table th {
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+    background: rgba(255, 255, 255, 0.05);
+    white-space: nowrap;
+}
+
+.stats-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.stats-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.sort-arrow {
+    color: #2ecc71;
+    font-size: 0.8em;
+}
+
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.page-button {
+    padding: 10px 16px;
+    border: 1px solid rgba(46, 204, 113, 0.5);
+    background: transparent;
+    color: #ffffff;
+    cursor: pointer;
+    border-radius: 0;
+}
+
+.page-button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.page-info {
+    color: #c7d2ff;
+}
+
+.player-link {
+    color: #00ff41;
+    text-decoration: none;
+}
+
+.player-link:hover {
+    text-decoration: underline;
 }
 
 .profile-header {
     display: flex;
     gap: 20px;
     background: #1a1f3a;
-    border-radius: 15px;
+    border-radius: 0;
     padding: 30px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     margin-bottom: 30px;
     align-items: flex-start;
-    border: 2px solid #84af8f;
+    border: none;
     grid-area: statcard;
 }
 
@@ -66,7 +400,7 @@ body {
 .role-icon {
     width: 40px;
     height: 40px;
-    border-radius: 8px;
+    border-radius: 0;
     object-fit: cover;
     background: #1a1f3a;
 }
@@ -93,7 +427,7 @@ body {
 
         .team-logo {
             height: 40px;
-            border-radius: 8px;
+            border-radius: 0;
             object-fit: cover;
             background: #1a1f3a;
         }
@@ -111,13 +445,13 @@ body {
     background: #1a1f3a;
     color: #ffffff;
     padding: 8px 12px;
-    border-radius: 6px;
+    border-radius: 0;
     font-size: 1em;
     white-space: nowrap;
     margin: 0;
     margin-bottom: 8px;
     display: none;
-    border: 2px solid #84af8f;
+    border: none;
     z-index: 10;
     font-weight: 600;
 }
@@ -128,8 +462,8 @@ body {
 
 .stats-card {
     background: #1a1f3a;
-    border: 2px solid #84af8f;
-    border-radius: 10px;
+    border: none;
+    border-radius: 0;
     padding: 20px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
@@ -177,11 +511,11 @@ body {
 
 .matches-section {
     background: #1a1f3a;
-    border-radius: 15px;
+    border-radius: 0;
     padding: 30px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     margin-top: 30px;
-    border: 2px solid #84af8f;
+    border: none;
     grid-area: matches;
 }
 
@@ -236,10 +570,19 @@ body {
 .match-icon {
             max-height: 30px;
             max-width: 30px;
-            border-radius: 8px;
+            border-radius: 0;
             object-fit: cover;
-            background: #1a1f3a;
         }
+
+.matches-table tbody tr.match-win {
+    background: rgba(46, 204, 113, 0.22);
+    border-left: 6px solid #2ecc71;
+}
+
+.matches-table tbody tr.match-loss {
+    background: rgba(231, 76, 60, 0.22);
+    border-left: 6px solid #e74c3c;
+}
 
 .matches-table tbody tr:hover {
     background: #2a2f4a;
@@ -263,11 +606,11 @@ body {
 
 .stats-graph-section {
     background: #1a1f3a;
-    border-radius: 15px;
+    border-radius: 0;
     padding: 30px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     margin-top: 30px;
-    border: 2px solid #84af8f;
+    border: none;
     gap: 20px;
     grid-area: graph;
 }
@@ -294,8 +637,8 @@ body {
     padding: 10px 16px;
     background: #0a0e27;
     color: #ffffff;
-    border: 2px solid #84af8f;
-    border-radius: 6px;
+    border: none;
+    border-radius: 0;
     cursor: pointer;
     font-size: 0.95em;
     font-weight: 600;
@@ -331,12 +674,12 @@ body {
     display: flex-reverse;
     gap: 40px;
     background: #1a1f3a;
-    border-radius: 15px;
+    border-radius: 0;
     padding: 30px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     margin-bottom: 30px;
     align-items: flex-start;
-    border: 2px solid #84af8f;
+    border: none;
     grid-area:heroes;
 }
 
@@ -361,12 +704,12 @@ body {
 
 .hero-card {
     position: relative;
-    border-radius: 8px;
+    border-radius: 0;
     overflow: hidden;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
     transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
     cursor: pointer;
-    border: 2px solid #84af8f;
+    border: none;
     width: 100px;
     height: 100px;
 }
@@ -402,11 +745,11 @@ body {
 
 .map-graph-section {
     background: #1a1f3a;
-    border-radius: 15px;
+    border-radius: 0;
     padding: 30px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     margin-top: 30px;
-    border: 2px solid #84af8f;
+    border: none;
     gap: 20px;
     grid-area: maps;
 }

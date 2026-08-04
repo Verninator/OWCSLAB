@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compare Teams</title>
+    <link rel="stylesheet" href="compare.css">
+    <script src="compare.js" defer></script>
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar-brand">
+            <div class="topbar-logo">Logo</div>
+            <span class="topbar-site-name">Site Name</span>
+        </div>
+        <nav class="topbar-links">
+            <a href="/players" class="topbar-link">Players</a>
+            <a href="/teams" class="topbar-link">Teams</a>
+            <a href="/maps" class="topbar-link">Maps</a>
+            <a href="/compare" class="topbar-link">Compare</a>
+            <a href="/" class="topbar-link">Home</a>
+        </nav>
+    </header>
+
+    <main class="compare-page">
+        <section class="compare-intro">
+            <h1>Team Comparison</h1>
+            <p>Select two teams to compare head-to-head map results, bans, matches, totals, and average metrics.</p>
+        </section>
+
+        <section class="compare-form-section">
+            <div class="compare-form-row">
+                <label for="teamA">Team A</label>
+                <select id="teamA"></select>
+            </div>
+            <div class="compare-form-row">
+                <label for="teamB">Team B</label>
+                <select id="teamB"></select>
+            </div>
+            <button id="compareButton" class="primary-button">Compare</button>
+        </section>
+
+        <section id="compareResults" class="compare-results"></section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-left">
+                <div class="footer-logo">Logo</div>
+                <div>Contact: <a href="mailto:contact@example.com">contact@example.com</a></div>
+            </div>
+            <div class="footer-links">
+                <a href="/help">Help</a>
+                <a href="/about">About</a>
+                <a href="/privacy">Privacy</a>
+                <a href="/terms">Terms</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
