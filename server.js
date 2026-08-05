@@ -78,36 +78,14 @@ app.get('/api/compare', async (req, res) => {
         const teamAId = Number(teamAName) || await db.getTeamId(teamAName);
         const teamBId = Number(teamBName) || await db.getTeamId(teamBName);
 
-        const [teamADetails] = await db.pool.query(`
-            SELECT team_id, name AS team_name, region, icon
-            FROM teams
-            WHERE team_id = ?
-        `, [teamAId]);
-        const [teamBDetails] = await db.pool.query(`
-            SELECT team_id, name AS team_name, region, icon
-            FROM teams
-            WHERE team_id = ?
-        `, [teamBId]);
+        const teamADetails = await db.getTeamDetails(teamAId)
+        const teamBDetails = await db.getTeamDetails(teamBId)
 
-        if (!teamADetails.length || !teamBDetails.length) {
-            return res.status(404).json({ error: 'One or both teams not found.' });
-        }
 
         const teamA = teamADetails[0];
         const teamB = teamBDetails[0];
 
-        const [h2hRows] = await db.pool.query(`
-            SELECT ts.map_id, m.name AS map_name, ts.team_id,
-                SUM(ts.result = 'Win') AS wins,
-                SUM(ts.result = 'Loss') AS losses,
-                SUM(ts.result = 'Draw') AS draws,
-                COUNT(*) AS played
-            FROM team_stats ts
-            INNER JOIN maps m ON ts.map_id = m.map_id
-            WHERE (ts.team_id = ? AND ts.opponent_id = ?) OR (ts.team_id = ? AND ts.opponent_id = ?)
-            GROUP BY ts.map_id, ts.team_id
-            ORDER BY m.name ASC
-        `, [teamAId, teamBId, teamBId, teamAId]);
+        const h2hRows = await db.getHeadtoHead(teamAId,teamBId)
 
         const mapResults = {};
         const headToHead = { played: 0, teamA_wins: 0, teamB_wins: 0, draws: 0 };
@@ -119,6 +97,7 @@ app.get('/api/compare', async (req, res) => {
                 mapResults[row.map_id] = {
                     map_id: row.map_id,
                     map_name: row.map_name,
+                    map_mode: row.map_mode,
                     teamA: { played: 0, wins: 0, losses: 0, draws: 0 },
                     teamB: { played: 0, wins: 0, losses: 0, draws: 0 }
                 };
@@ -138,17 +117,7 @@ app.get('/api/compare', async (req, res) => {
             }
         }
 
-        const [teamAMatchRows] = await db.pool.query(`
-            SELECT m.match_id, m.date, m.team_1_id, t1.name AS team_1_name, t1.icon AS team_1_icon,
-                m.team_1_score, m.team_2_id, t2.name AS team_2_name, t2.icon AS team_2_icon, m.team_2_score,
-                tor.name AS tournament
-            FROM matches m
-            INNER JOIN teams t1 ON m.team_1_id = t1.team_id
-            INNER JOIN teams t2 ON m.team_2_id = t2.team_id
-            LEFT JOIN tournaments tor ON m.tournament_id = tor.tournament_id
-            WHERE (m.team_1_id = ? AND m.team_2_id = ?) OR (m.team_1_id = ? AND m.team_2_id = ?)
-            ORDER BY m.date DESC
-        `, [teamAId, teamBId, teamBId, teamAId]);
+        const teamAMatchRows = await db.getHeadtoHeadMatches(teamAId,teamBId)
 
         const matchHistory = teamAMatchRows.map(row => {
             const teamAIsHome = row.team_1_id === teamAId;
@@ -163,57 +132,34 @@ app.get('/api/compare', async (req, res) => {
                 tournament: row.tournament,
                 teamA: {
                     id: teamAId,
-                    name: teamA.team_name,
-                    icon: teamA.icon,
+                    name: teamADetails.name,
+                    icon: teamADetails.icon,
                     score: teamAScore
                 },
                 teamB: {
                     id: teamBId,
-                    name: teamB.team_name,
-                    icon: teamB.icon,
+                    name: teamBDetails.name,
+                    icon: teamBDetails.icon,
                     score: teamBScore
                 },
                 result
             };
         });
-
-        const [teamATotalsRows] = await db.pool.query(`
-            SELECT COUNT(*) AS played,
-                SUM(result = 'Win') AS wins,
-                SUM(result = 'Loss') AS losses,
-                SUM(result = 'Draw') AS draws
-            FROM team_stats
-            WHERE team_id = ?
-        `, [teamAId]);
-        const [teamBTotalsRows] = await db.pool.query(`
-            SELECT COUNT(*) AS played,
-                SUM(result = 'Win') AS wins,
-                SUM(result = 'Loss') AS losses,
-                SUM(result = 'Draw') AS draws
-            FROM team_stats
-            WHERE team_id = ?
-        `, [teamBId]);
+        const teamATotalsRows = await db.getTeamTotalStats(teamAId)
+        const teamBTotalsRows = await db.getTeamTotalStats(teamBId)
 
         const totalsA = teamATotalsRows[0];
         const totalsB = teamBTotalsRows[0];
 
-        const [teamAMapStats] = await db.pool.query(`
-            SELECT COUNT(*) AS played, SUM(result = 'Win') AS wins, SUM(result = 'Loss') AS losses, SUM(result = 'Draw') AS draws, COUNT(DISTINCT map_id) AS maps_played
-            FROM team_stats
-            WHERE team_id = ?
-        `, [teamAId]);
-        const [teamBMapStats] = await db.pool.query(`
-            SELECT COUNT(*) AS played, SUM(result = 'Win') AS wins, SUM(result = 'Loss') AS losses, SUM(result = 'Draw') AS draws, COUNT(DISTINCT map_id) AS maps_played
-            FROM team_stats
-            WHERE team_id = ?
-        `, [teamBId]);
+        const teamAMapStats = await db.getTeamMapPlayed(teamAId)
+        const teamBMapStats = await db.getTeamMapPlayed(teamBId)
 
         const averagesA = teamAMapStats[0];
         const averagesB = teamBMapStats[0];
 
         const compareResponse = {
             teamA: {
-                ...teamA,
+                ...teamADetails,
                 totals: {
                     played: totalsA.played,
                     wins: totalsA.wins,
@@ -230,7 +176,7 @@ app.get('/api/compare', async (req, res) => {
                 }
             },
             teamB: {
-                ...teamB,
+                ...teamBDetails,
                 totals: {
                     played: totalsB.played,
                     wins: totalsB.wins,
@@ -255,16 +201,7 @@ app.get('/api/compare', async (req, res) => {
             matches: matchHistory
         };
 
-        const [banRows] = await db.pool.query(`
-            SELECT ts.team_id, h.hero_id, h.name AS hero_name, h.icon AS hero_icon,
-                SUM(CASE WHEN ts.ban_id = h.hero_id THEN 1 ELSE 0 END) AS bans_for,
-                SUM(CASE WHEN ts.opponent_ban_id = h.hero_id THEN 1 ELSE 0 END) AS bans_against
-            FROM team_stats ts
-            LEFT JOIN heroes h ON h.hero_id IN (ts.ban_id, ts.opponent_ban_id)
-            WHERE (ts.team_id = ? AND ts.opponent_id = ?) OR (ts.team_id = ? AND ts.opponent_id = ?)
-            GROUP BY ts.team_id, h.hero_id
-            ORDER BY ts.team_id, bans_for DESC, bans_against DESC
-        `, [teamAId, teamBId, teamBId, teamAId]);
+        const banRows = await db.getHeadtoHeadBans(teamAId, teamBId)
 
         const banGroups = { [teamAId]: [], [teamBId]: [] };
         for (const row of banRows) {
@@ -273,6 +210,7 @@ app.get('/api/compare', async (req, res) => {
                 hero_id: row.hero_id,
                 hero_name: row.hero_name,
                 hero_icon: row.hero_icon,
+                hero_role: row.hero_role,
                 bans_for: row.bans_for,
                 bans_against: row.bans_against,
                 total_bans: parseInt(row.bans_for || 0) + parseInt(row.bans_against || 0)

@@ -1,6 +1,8 @@
 // Global chart instance
 let statsChart = null;
 let chartData = null;
+let currentMapView = 'map';
+let playerMapData = [];
 
 function formatCompactNumber(number) {
   if (number < 1000) {
@@ -95,7 +97,7 @@ async function loadPlayerData() {
         const el = document.getElementById(id);
         if (el) el.textContent = formatCompactNumber(data.total[totalStatKeys[index]]) ;
     });
-    
+
     // Update average stats (all have values)
     const avgStatIds = [
         'avgEliminations',
@@ -106,7 +108,7 @@ async function loadPlayerData() {
         'avgMitigation'
     ];
     const avgStatKeys = ['eliminations', 'assists', 'deaths', 'damage', 'healing', 'mitigation'];
-    
+
     avgStatIds.forEach((id, index) => {
         const el = document.getElementById(id);
         if (el) el.textContent = formatCompactNumber(parseFloat(data.avg[avgStatKeys[index]]).toFixed(1));
@@ -295,131 +297,125 @@ function setupChartSelector() {
     }
 }
 
-// Initialize and render the stats chart
-function initializeMapChart(maps) {
-    const ctx = document.getElementById('mapChart');
-    if (!ctx || !maps || maps.length === 0) return;
-    
-    mapChartData = maps;
-    renderMapChart();
+function getWinRate(map) {
+    return map.played ? map.won / map.played : 0;
 }
 
-// Render chart for selected stat
-function renderMapChart() {
-    if (!mapChartData || mapChartData.length === 0) return;
-    
-    const ctx = document.getElementById('mapChart');
-    if (!ctx) return;
-    
-    // Calculate cumulative totals and running averages
-    const labels = [];
-    const lostData = [];
-    const wonData = [];
-    const drawData = [];
-    
-    mapChartData.forEach((map, index) => {   
-        let lost = map.lost;
-        let won = map.won;
-        let draw = map.drawn;
-        if (typeof lost === 'string') {
-            lost = parseInt(lost);
-        }
-        if (typeof won === 'string') {
-            won = parseInt(won);
-        }
-        if (typeof draw === 'string') {
-            draw = parseInt(draw);
-        }
-        won = won || 0;
-        lost = lost || 0;
-        draw = draw || 0;
+function parseMapValue(value) {
+        return Number.parseInt(value, 10) || 0;
+}
 
-        if (won + lost + draw > 0){
-            labels.push(map.map || `Map ${index + 1}`);  
-            lostData.push(lost);
-            wonData.push(won);
-            drawData.push(draw);
-        }
-        
+function sortMapsByWinRate(maps) {
+    return [...maps].sort((left, right) => {
+        const rateDiff = getWinRate(right) - getWinRate(left);
+        if (rateDiff !== 0) return rateDiff;
+        const playedDiff = right.played - left.played;
+        if (playedDiff !== 0) return playedDiff;
+        return left.map.localeCompare(right.map);
     });
-    
-    // Create new chart
-    mapChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: `Won`,
-                    data: wonData,
-                    backgroundColor: '#2ecc71',
-                    stack: 'Stack 0'
-                },
-                {
-                    label: `Draw`,
-                    data: drawData,
-                    backgroundColor: '#e7e294',
-                    stack: 'Stack 0'
-                },
-                {
-                    label: `Lost`,
-                    data: lostData,
-                    backgroundColor: '#e74c3c',
-                    stack: 'Stack 0'
-                }
-            ]
-        },
-        options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false,
-                },
-                tooltip: {
-                    backgroundColor: '#1a1f3a',
-                    borderColor: '#00ff41',
-                    borderWidth: 2,
-                    titleColor: '#ffffff',
-                    bodyColor: '#ffffff',
-                    padding: 12,
-                    titleFont: { size: 14, weight: 'bold' },
-                    bodyFont: { size: 12 }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: 'rgba(0, 255, 65, 0.1)',
-                        drawBorder: false
-                    },
-                    ticks: {
-                        color: '#ffffff',
-                        font: { size: 11 }
-                    },
-                    stacked : true
-                },
-                x: {
-                    grid: {
-                        display: false,
-                        drawBorder: false
-                    },
-                    ticks: {
-                        color: '#ffffff',
-                        font: { size: 11 }
-                    },
-                    stacked : true
-                }
-            }
+}
+
+function groupMapsByMode(maps) {
+    const grouped = maps.reduce((acc, map) => {
+        const mode = map.mode || 'Unknown';
+        if (!acc[mode]) {
+            acc[mode] = { map: mode, mode, played: 0, won: 0, drawn: 0, lost: 0 };
         }
+
+        acc[mode].played += parseMapValue(map.played);
+        acc[mode].won += parseMapValue(map.won);
+        acc[mode].drawn += parseMapValue(map.drawn);
+        acc[mode].lost += parseMapValue(map.lost);
+        return acc;
+    }, {});
+
+    return sortMapsByWinRate(Object.values(grouped));
+}
+
+function renderMapResults() {
+    const container = document.getElementById('mapChart');
+    if (!container) return;
+
+    if (!playerMapData.length) {
+        container.innerHTML = '<p class="empty-chart-message">No map data available</p>';
+        return;
+    }
+
+    const mapsToRender = currentMapView === 'mode'
+        ? groupMapsByMode(playerMapData)
+        : sortMapsByWinRate(playerMapData);
+
+    const maxValue = Math.max(1, ...mapsToRender.flatMap(map => [map.won, map.drawn, map.lost]));
+    const resultTypes = [
+        { key: 'won', label: 'Won', color: '#2ecc71' },
+        { key: 'drawn', label: 'Draw', color: '#e7e294' },
+        { key: 'lost', label: 'Lost', color: '#e74c3c' }
+    ];
+
+    container.innerHTML = mapsToRender.map(map => {
+        const winRate = map.played ? Math.round((map.won / map.played) * 100) : 0;
+        const bars = resultTypes
+        .filter(result => result.key !== 'drawn' || map.drawn > 0)
+        .map(result => {
+            const value = map[result.key];
+            const width = Math.round((value / maxValue) * 100);
+
+            return `
+                <div class="map-result-bar-group" data-result-type="${result.label}">
+                    <span class="map-result-bar-name" style="color: ${result.color};">${result.label}</span>
+                    <div class="map-result-bar-track">
+                        <div class="map-result-bar-fill" style="width: ${width}%; background: ${result.color};"></div>
+                    </div>
+                    <div class="map-result-bar-value">${value}</div>
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <div class="map-result-row">
+                <div class="map-result-label">
+                    <span>${map.map}</span>
+                    <small class="comparison-subtext">Played ${map.played} · Win Rate ${winRate}%</small>
+                </div>
+                <div class="map-result-bars">
+                    ${bars}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    document.querySelectorAll('[data-map-view]').forEach(button => {
+        button.classList.toggle('is-active', button.dataset.mapView === currentMapView);
     });
+}
+
+// Initialize and render the stats chart
+function initializeMapChart(maps) {
+    playerMapData = (maps || [])
+        .map((map, index) => ({
+            map: map.map || `Map ${index + 1}`,
+            mode: map.mode || 'Unknown',
+            played: Number.parseInt(map.played, 10) || 0,
+            won: Number.parseInt(map.won, 10) || 0,
+            drawn: Number.parseInt(map.drawn, 10) || 0,
+            lost: Number.parseInt(map.lost, 10) || 0
+        }))
+        .filter(map => map.won + map.drawn + map.lost > 0);
+
+    renderMapResults();
 }
 
 // Load data when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("Hello World");
+    document.addEventListener('click', event => {
+        const toggle = event.target.closest('[data-map-view]');
+        if (!toggle) return;
+        const nextView = toggle.dataset.mapView;
+        if (!nextView || nextView === currentMapView) return;
+        currentMapView = nextView;
+        renderMapResults();
+    });
+
     loadPlayerData();
     setupChartSelector();
 });

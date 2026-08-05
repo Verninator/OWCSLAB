@@ -564,6 +564,35 @@ a:hover {
     margin-bottom: 20px;
 }
 
+.compare-view-toggle {
+    display: inline-flex;
+    gap: 8px;
+    padding: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+}
+
+.compare-view-button {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: #c7d2ff;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.compare-view-button:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+}
+
+.compare-view-button.is-active {
+    background: #2ecc71;
+    color: #0a0e27;
+}
+
 .graph-header h2 {
     color: #00ff41;
     font-size: 1.5em;
@@ -584,6 +613,91 @@ a:hover {
     grid-area: bans;
 }
 
+.ban-results-chart {
+    display: grid;
+    gap: 16px;
+    margin-top: 15px;
+}
+
+.hero-bar-row {
+    display: grid;
+    gap: 12px;
+}
+
+.hero-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.hero-label span {
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.hero-bars {
+    display: grid;
+    gap: 10px;
+}
+
+.hero-bar-group {
+    display: grid;
+    grid-template-columns: 1fr 3rem;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+}
+
+.hero-bar-team-name {
+    position: absolute;
+    top: -26px;
+    left: 0;
+    color: #ffffff;
+    font-size: 0.9rem;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #1a1f3a;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+    transform: translateY(4px);
+}
+
+.hero-bar-group:hover .hero-bar-team-name {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.hero-bar-track {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    height: 18px;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.3s ease;
+}
+
+.hero-bar-value {
+    color: #ffffff;
+    font-weight: 700;
+    min-width: 2.5rem;
+    text-align: right;
+}
+
+.hero-icon {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
 .map-graph-section {
     background: #1a1f3a;
     border-radius: 0;
@@ -593,6 +707,93 @@ a:hover {
     border: none;
     gap: 20px;
     grid-area: maps;
+}
+
+.map-results-chart {
+    display: grid;
+    gap: 16px;
+    margin-top: 15px;
+}
+
+.map-result-row {
+    display: grid;
+    gap: 12px;
+}
+
+.map-result-label {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.map-result-label span {
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.comparison-subtext {
+    color: #a7b2ff;
+    font-size: 0.85rem;
+}
+
+.map-result-bars {
+    display: grid;
+    gap: 10px;
+}
+
+.map-result-bar-group {
+    display: grid;
+    grid-template-columns: 1fr 3rem;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+}
+
+.map-result-bar-name {
+    position: absolute;
+    top: -26px;
+    left: 0;
+    color: #ffffff;
+    font-size: 0.9rem;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #1a1f3a;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+    transform: translateY(4px);
+}
+
+.map-result-bar-group:hover .map-result-bar-name {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.map-result-bar-track {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    height: 18px;
+    position: relative;
+    overflow: hidden;
+}
+
+.map-result-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.3s ease;
+}
+
+.map-result-bar-value {
+    color: #ffffff;
+    font-weight: 700;
+    min-width: 2.5rem;
+    text-align: right;
+}
+
+.empty-chart-message {
+    color: #c7d2ff;
 }
 
 @media (max-width: 768px) {

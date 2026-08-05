@@ -39,18 +39,7 @@
                     <div class="roster-header">
                         <h2>Roster</h2>
                     </div>
-                    <table class="roster-table" id="rosterTable">
-                        <thead>
-                            <tr>
-                                <th width = 10% class="icon-column">Role</th>
-                                <th>Name</th>
-                                <th width = 10%>Link</th>
-                            </tr>
-                        </thead>
-                        <tbody id="rosterTableBody">
-                        </tbody>
-                        <tfoot id="rosterTableFoot"></tfoot>
-                    </table>
+                    <div id="rosterContent"></div>
                 </div>
             </div>
         </div>
@@ -99,20 +88,24 @@
     <div class="ban-graph-section">
         <div class="graph-header">
             <h2>Hero Bans</h2>
+            <div class="compare-view-toggle" role="group" aria-label="Ban results grouping">
+                <button type="button" class="compare-view-button is-active" data-ban-view="hero">Hero</button>
+                <button type="button" class="compare-view-button" data-ban-view="role">Role</button>
+            </div>
         </div>
-        <div class="graph-container">
-            <canvas id="banChart"></canvas>
-        </div>
+        <div class="ban-results-chart" id="banChart"></div>
     </div>
 
     <!-- Map Stats -->
     <div class="map-graph-section">
         <div class="graph-header">
             <h2>Map Results</h2>
+            <div class="compare-view-toggle" role="group" aria-label="Map results grouping">
+                <button type="button" class="compare-view-button is-active" data-map-view="map">Map</button>
+                <button type="button" class="compare-view-button" data-map-view="mode">Mode</button>
+            </div>
         </div>
-        <div class="graph-container">
-            <canvas id="mapChart"></canvas>
-        </div>
+        <div class="map-results-chart" id="mapChart"></div>
     </div>
 </div>
     <footer class="site-footer">

@@ -94,6 +94,72 @@ async function createTeamsTable() {
     return results;
 }
 
+export async function getHeadtoHead(teamAId,teamBId){
+    const [h2hRows] = await pool.query(`
+        SELECT ts.map_id, m.name AS map_name, m.mode AS map_mode, ts.team_id,
+            SUM(ts.result = 'Win') AS wins,
+            SUM(ts.result = 'Loss') AS losses,
+            SUM(ts.result = 'Draw') AS draws,
+            COUNT(*) AS played
+        FROM team_stats ts
+        INNER JOIN maps m ON ts.map_id = m.map_id
+        WHERE (ts.team_id = ? AND ts.opponent_id = ?) OR (ts.team_id = ? AND ts.opponent_id = ?)
+        GROUP BY ts.map_id, m.name, m.mode, ts.team_id
+        ORDER BY m.name ASC
+    `, [teamAId, teamBId, teamBId, teamAId]);
+    return h2hRows
+}
+
+export async function getHeadtoHeadMatches(teamAId,teamBId){
+    const [teamAMatchRows] = await pool.query(`
+        SELECT m.match_id, m.date, m.team_1_id, t1.name AS team_1_name, t1.icon AS team_1_icon,
+            m.team_1_score, m.team_2_id, t2.name AS team_2_name, t2.icon AS team_2_icon, m.team_2_score,
+            tor.name AS tournament
+        FROM matches m
+        INNER JOIN teams t1 ON m.team_1_id = t1.team_id
+        INNER JOIN teams t2 ON m.team_2_id = t2.team_id
+        LEFT JOIN tournaments tor ON m.tournament_id = tor.tournament_id
+        WHERE (m.team_1_id = ? AND m.team_2_id = ?) OR (m.team_1_id = ? AND m.team_2_id = ?)
+        ORDER BY m.date DESC
+    `, [teamAId, teamBId, teamBId, teamAId]);
+    return teamAMatchRows
+}
+
+export async function getTeamTotalStats(team_id){
+    const [result] = await pool.query(`
+        SELECT COUNT(*) AS played,
+            SUM(result = 'Win') AS wins,
+            SUM(result = 'Loss') AS losses,
+            SUM(result = 'Draw') AS draws
+        FROM team_stats
+        WHERE team_id = ?
+    `, [team_id]);
+    return result
+}
+
+export async function getTeamMapPlayed(team_id){
+    const [result] = await pool.query(`
+            SELECT COUNT(*) AS played, SUM(result = 'Win') AS wins, SUM(result = 'Loss') AS losses, SUM(result = 'Draw') AS draws, COUNT(DISTINCT map_id) AS maps_played
+            FROM team_stats
+            WHERE team_id = ?
+    `, [team_id]);
+    return result
+}
+
+export async function getHeadtoHeadBans(teamA_id, teamB_id){
+    const [result] = await pool.query(`
+        SELECT ts.team_id, h.hero_id, h.name AS hero_name, h.icon AS hero_icon, h.role AS hero_role,
+            SUM(CASE WHEN ts.ban_id = h.hero_id THEN 1 ELSE 0 END) AS bans_for,
+            SUM(CASE WHEN ts.opponent_ban_id = h.hero_id THEN 1 ELSE 0 END) AS bans_against
+        FROM team_stats ts
+        LEFT JOIN heroes h ON h.hero_id IN (ts.ban_id, ts.opponent_ban_id)
+        WHERE (ts.team_id = ? AND ts.opponent_id = ?) OR (ts.team_id = ? AND ts.opponent_id = ?)
+        GROUP BY ts.team_id, h.hero_id
+        ORDER BY ts.team_id, bans_for DESC, bans_against DESC
+    `, [teamA_id, teamB_id, teamB_id, teamA_id]);
+    return result
+}
+
 export async function getPlayerId(player_name){
     const [[results]] =  await pool.query(`
         SELECT player_id
@@ -265,6 +331,7 @@ export async function getPlayerMapStats(player_id) {
     const [results] =  await pool.query(`
     SELECT
     m.name as map,
+    m.mode as mode,
     COUNT(p.map_id) as played,
     SUM(CASE WHEN  p.result = "Win" THEN 1 ELSE 0 END) won, 
     SUM(CASE WHEN p.result = "Draw" THEN 1 ELSE 0 END) drawn, 
@@ -324,7 +391,7 @@ export async function getTeamId(team_name){
 
 export async function getTeamDetails(team_id) {
     const [[results]] =  await pool.query(`
-        SELECT name, region, icon
+        SELECT name, region, icon, colour
         FROM teams
         WHERE team_id = ?
         `,
@@ -416,6 +483,7 @@ export async function getTeamMapStats(team_id) {
     const [results] =  await pool.query(`
     SELECT
     m.name as map,
+    m.mode as mode,
     COUNT(t.map_id) as played,
     SUM(CASE WHEN  t.result = "Win" THEN 1 ELSE 0 END) won, 
     SUM(CASE WHEN t.result = "Draw" THEN 1 ELSE 0 END) drawn, 
@@ -436,24 +504,27 @@ export async function getTeamMapStats(team_id) {
 
 export async function getBanStats(team_id) {
     const [results] =  await pool.query(`
-    SELECT heroes.name as hero, heroes.icon as hero_icon, bans.bansFor, bans.bansAgainst, bans.bansFor + bans.bansAgainst as played
-    FROM    
-    (SELECT bansFor.hero_id, IFNULL(bansFor.bans,0) as bansFor, IFNULL(bansAgainst.bans,0) as bansAgainst
+    SELECT
+    heroes.name as hero,
+    heroes.icon as hero_icon,
+    heroes.role as hero_role,
+    SUM(bans.bansFor) as bansFor,
+    SUM(bans.bansAgainst) as bansAgainst,
+    SUM(bans.bansFor) + SUM(bans.bansAgainst) as played
     FROM (
-    SELECT ban_id as hero_id, COUNT(ban_id) as bans
+    SELECT ban_id as hero_id, COUNT(*) as bansFor, 0 as bansAgainst
     FROM team_stats
-    WHERE team_id = ?
-    GROUP BY ban_id) as bansFor
-    LEFT JOIN
-    (
-    SELECT opponent_ban_id as hero_id, COUNT(opponent_ban_id) as bans
+    WHERE team_id = ? AND ban_id IS NOT NULL
+    GROUP BY ban_id
+    UNION ALL
+    SELECT opponent_ban_id as hero_id, 0 as bansFor, COUNT(*) as bansAgainst
     FROM team_stats
-    WHERE team_id = ?
-    GROUP BY opponent_ban_id) as bansAgainst
-    ON bansFor.hero_id = bansAgainst.hero_id) as bans
-    INNER JOIN
-    heroes
+    WHERE team_id = ? AND opponent_ban_id IS NOT NULL
+    GROUP BY opponent_ban_id
+    ) as bans
+    INNER JOIN heroes
     ON heroes.hero_id = bans.hero_id
+    GROUP BY heroes.hero_id, heroes.name, heroes.icon, heroes.role
     ORDER BY played DESC    
     `,
     [team_id, team_id]

@@ -169,10 +169,12 @@
         <div class="map-graph-section">
             <div class="graph-header">
                 <h2>Maps</h2>
+                <div class="compare-view-toggle" role="group" aria-label="Map results grouping">
+                    <button type="button" class="compare-view-button is-active" data-map-view="map">Map</button>
+                    <button type="button" class="compare-view-button" data-map-view="mode">Mode</button>
+                </div>
             </div>
-            <div class="graph-container">
-                <canvas id="mapChart"></canvas>
-            </div>
+            <div class="map-results-chart" id="mapChart"></div>
         </div>
 
 

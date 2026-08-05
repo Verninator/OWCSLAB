@@ -31,11 +31,17 @@
         <section class="compare-form-section">
             <div class="compare-form-row">
                 <label for="teamA">Team A</label>
-                <select id="teamA"></select>
+                <div class="search-input-wrapper">
+                    <input id="teamA" type="search" placeholder="Search team..." autocomplete="off">
+                    <div class="team-suggestions" id="teamA-suggestions" aria-label="Team A suggestions"></div>
+                </div>
             </div>
             <div class="compare-form-row">
                 <label for="teamB">Team B</label>
-                <select id="teamB"></select>
+                <div class="search-input-wrapper">
+                    <input id="teamB" type="search" placeholder="Search team..." autocomplete="off">
+                    <div class="team-suggestions" id="teamB-suggestions" aria-label="Team B suggestions"></div>
+                </div>
             </div>
             <button id="compareButton" class="primary-button">Compare</button>
         </section>

@@ -43,11 +43,13 @@ function buildHeaderRow(container, datasetKey) {
 }
 
 function compareValues(a, b, key, order) {
-    const isNumeric = typeof a[key] === 'number' && typeof b[key] === 'number';
+    const leftNumeric = Number(a[key]);
+    const rightNumeric = Number(b[key]);
+    const isNumeric = Number.isFinite(leftNumeric) && Number.isFinite(rightNumeric) && a[key] !== '' && b[key] !== '';
     if (!isNumeric) {
         return order === 'asc' ? String(a[key]).localeCompare(String(b[key])) : String(b[key]).localeCompare(String(a[key]));
     }
-    return order === 'asc' ? a[key] - b[key] : b[key] - a[key];
+    return order === 'asc' ? leftNumeric - rightNumeric : rightNumeric - leftNumeric;
 }
 
 function matchesSearch(row, searchTerm) {
