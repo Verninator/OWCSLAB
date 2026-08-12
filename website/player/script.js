@@ -3,6 +3,9 @@ let statsChart = null;
 let chartData = null;
 let currentMapView = 'map';
 let playerMapData = [];
+let tournamentOptions = [];
+let selectedTournamentIds = [];
+let tournamentMode = 'include';
 
 function formatCompactNumber(number) {
   if (number < 1000) {
@@ -16,6 +19,117 @@ function formatCompactNumber(number) {
   } else if (number >= 1_000_000_000_000 && number < 1_000_000_000_000_000) {
     return (number / 1_000_000_000_000).toFixed(1) + "T";
   }
+}
+
+function buildTournamentQuery() {
+    const params = new URLSearchParams({
+        tournaments: selectedTournamentIds.join(','),
+        tournamentMode
+    });
+    return params.toString();
+}
+
+function buildTournamentApiUrl() {
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    let playerIdentifier = null;
+    if (pathParts.length >= 2 && pathParts[0].toLowerCase() === 'players') {
+        playerIdentifier = pathParts[1];
+    } else {
+        const params = new URLSearchParams(window.location.search);
+        playerIdentifier = params.get('id');
+    }
+
+    const params = new URLSearchParams();
+    if (playerIdentifier) {
+        const numericIdentifier = Number(playerIdentifier);
+        if (Number.isInteger(numericIdentifier) && numericIdentifier > 0) {
+            params.set('playerId', String(numericIdentifier));
+        } else {
+            params.set('player', playerIdentifier);
+        }
+    }
+
+    const query = params.toString();
+    return query ? `/api/tournaments?${query}` : '/api/tournaments';
+}
+
+async function loadTournamentOptions() {
+    try {
+        const res = await fetch(buildTournamentApiUrl());
+        const data = await res.json();
+        tournamentOptions = Array.isArray(data) ? data : [];
+        renderTournamentFilters();
+    } catch (error) {
+        console.warn('Failed to load tournament options', error);
+    }
+}
+
+function renderTournamentFilters() {
+    const container = document.getElementById('tournamentFilterOptions');
+    const modeSelect = document.getElementById('tournamentMode');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!tournamentOptions.length) {
+        container.innerHTML = '<div class="empty-chart-message">No tournament options available</div>';
+        return;
+    }
+
+    const optionsMarkup = tournamentOptions.map(tournament => {
+        const checked = selectedTournamentIds.includes(tournament.tournament_id);
+        return `
+            <label class="filter-option ${checked ? 'is-active' : ''}">
+                <input type="checkbox" value="${tournament.tournament_id}" ${checked ? 'checked' : ''}>
+                <span>${tournament.name}</span>
+            </label>
+        `;
+    }).join('');
+
+    container.innerHTML = optionsMarkup;
+    container.querySelectorAll('input[type="checkbox"]').forEach(input => {
+        input.addEventListener('change', handleTournamentFilterChange);
+    });
+
+    if (modeSelect) {
+        modeSelect.value = tournamentMode;
+        modeSelect.onchange = () => {
+            tournamentMode = modeSelect.value;
+            loadPlayerData();
+        };
+    }
+}
+
+function handleTournamentFilterChange(event) {
+    const { value, checked } = event.target;
+    const tournamentId = Number(value);
+    if (checked) {
+        if (!selectedTournamentIds.includes(tournamentId)) {
+            selectedTournamentIds.push(tournamentId);
+        }
+    } else {
+        selectedTournamentIds = selectedTournamentIds.filter(id => id !== tournamentId);
+    }
+    renderTournamentFilters();
+    loadPlayerData();
+}
+
+function setFilterPanelOpen(isOpen) {
+    const panel = document.getElementById('filterPanel');
+    const toggle = document.getElementById('filterToggle');
+    if (!panel || !toggle) return;
+    panel.classList.toggle('is-open', isOpen);
+    panel.classList.toggle('is-collapsed', !isOpen);
+    toggle.setAttribute('aria-expanded', String(isOpen));
+    toggle.textContent = isOpen ? 'Close' : 'Filter';
+}
+
+function toggleFilterPanel(event) {
+    if (event) {
+        event.stopPropagation();
+    }
+    const panel = document.getElementById('filterPanel');
+    if (!panel) return;
+    setFilterPanelOpen(!panel.classList.contains('is-open'));
 }
 
 // Fetch player data from API and populate the page
@@ -35,7 +149,8 @@ async function loadPlayerData() {
         return;
     }
 
-    const data = await fetch(`/api/players/${encodeURIComponent(playerIdentifier)}`)
+    const query = buildTournamentQuery();
+    const data = await fetch(`/api/players/${encodeURIComponent(playerIdentifier)}?${query}`)
         .then(response => response.json())
         .then(data => { return data; })
         .catch(error => { alert(error); return null; });
@@ -57,15 +172,7 @@ async function loadPlayerData() {
     // Update role icon (always has a value)
     const roleIconEl = document.getElementById('roleIcon');
     let roleIconSrc;
-    if (data.player_details.role == 'Tank'){
-        roleIconSrc = "https://static.wikia.nocookie.net/overwatch_gamepedia/images/c/c8/Role_Tank_Circle.svg/revision/latest/scale-to-width-down/120?cb=20250727105320";
-    } else if (data.player_details.role == 'Dps'){
-        roleIconSrc = "https://static.wikia.nocookie.net/overwatch_gamepedia/images/8/80/Role_Damage_Circle.svg/revision/latest/scale-to-width-down/120?cb=20250727105011";
-    }
-    else if (data.player_details.role == 'Support'){
-        roleIconSrc = "https://static.wikia.nocookie.net/overwatch_gamepedia/images/9/93/Role_Support_Circle.svg/revision/latest/scale-to-width-down/120?cb=20250727105200";
-    }
-    
+    roleIconSrc = `../content/images/roles/${data.player_details.role}.webp` 
     if (roleIconEl) roleIconEl.src = roleIconSrc;
     
     // Update team name (always has a value)
@@ -75,6 +182,27 @@ async function loadPlayerData() {
     // Update team logo (always has a value)
     const teamLogoEl = document.getElementById('teamLogo');
     if (teamLogoEl) teamLogoEl.src = "../" + data.player_details.team_icon;
+
+    const owwcTeamContainerEl = document.getElementById('owwcTeamContainer');
+    const owwcTeamLogoEl = document.getElementById('owwcTeamLogo');
+    const owwcTeamLinkEl = document.getElementById('owwcTeamLink');
+    const owwcTeamNameEl = document.getElementById('owwcTeamName');
+    if (owwcTeamContainerEl && owwcTeamLogoEl && owwcTeamLinkEl && owwcTeamNameEl) {
+        const owwcIcon = data.player_details.owwc_team_icon;
+        const owwcTeamName = data.player_details.owwc_team_name;
+        if (owwcIcon && owwcTeamName) {
+            owwcTeamLogoEl.src = "../" + owwcIcon;
+            owwcTeamNameEl.textContent = owwcTeamName;
+            owwcTeamLinkEl.href = `/teams/${encodeURIComponent(owwcTeamName)}`;
+            owwcTeamContainerEl.classList.remove('is-hidden');
+        } else {
+            owwcTeamLogoEl.removeAttribute('src');
+            owwcTeamNameEl.textContent = 'OWWC Team';
+            owwcTeamLinkEl.href = '#';
+            owwcTeamContainerEl.classList.add('is-hidden');
+        }
+    }
+
     // Make team logo/name link to the team page
     const teamLinkEl = document.getElementById('teamLink');
     if (teamLinkEl && data.player_details.team) {
@@ -138,22 +266,33 @@ async function loadPlayerData() {
 }
 
 // Populate matches table with data
+let allMatches = [];
+let matchesPage = 0;
+const MATCHES_PAGE_SIZE = 10;
+
 function populateMatchesTable(matches) {
+    allMatches = matches || [];
+    matchesPage = 0;
+    renderMatchesPage();
+}
+
+function renderMatchesPage() {
     const tbody = document.getElementById('matchesTableBody');
     const tfoot = document.getElementById('matchesTableFoot');
-    
     if (!tbody || !tfoot) return;
-    
     tbody.innerHTML = '';
     tfoot.innerHTML = '';
-    
-    if (!matches || matches.length === 0) {
+
+    if (!allMatches.length) {
         tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">No match data available</td></tr>';
+        renderMatchesPagination();
         return;
     }
-    
-    // Populate match rows
-    matches.forEach((match, index) => {
+
+    const start = matchesPage * MATCHES_PAGE_SIZE;
+    const pageItems = allMatches.slice(start, start + MATCHES_PAGE_SIZE);
+
+    pageItems.forEach(match => {
         const row = document.createElement('tr');
         const teamScore = Number(match.team_score);
         const opponentScore = Number(match.opponent_score);
@@ -164,7 +303,7 @@ function populateMatchesTable(matches) {
                 row.classList.add('match-loss');
             }
         }
-        let date = new Date(match.date)
+        let date = new Date(match.date);
         row.innerHTML = `
             <td class="icon-column"><img src="../${match.tournament_icon}" class="match-icon"></td>
             <td>${match.tournament}</td>
@@ -176,7 +315,43 @@ function populateMatchesTable(matches) {
         `;
         tbody.appendChild(row);
     });
-    
+
+    renderMatchesPagination();
+}
+
+function renderMatchesPagination() {
+    const existing = document.getElementById('matchesPagination');
+    if (existing) existing.remove();
+
+    const totalPages = Math.ceil(allMatches.length / MATCHES_PAGE_SIZE);
+    if (totalPages <= 1) return;
+
+    const container = document.createElement('div');
+    container.id = 'matchesPagination';
+    container.className = 'pagination';
+
+    const prevBtn = document.createElement('button');
+    prevBtn.textContent = '\u2039';
+    prevBtn.className = 'page-button';
+    prevBtn.disabled = matchesPage === 0;
+    prevBtn.addEventListener('click', () => { matchesPage--; renderMatchesPage(); });
+
+    const info = document.createElement('span');
+    info.className = 'page-info';
+    info.textContent = `${matchesPage + 1} / ${totalPages}`;
+
+    const nextBtn = document.createElement('button');
+    nextBtn.textContent = '\u203a';
+    nextBtn.className = 'page-button';
+    nextBtn.disabled = matchesPage >= totalPages - 1;
+    nextBtn.addEventListener('click', () => { matchesPage++; renderMatchesPage(); });
+
+    container.appendChild(prevBtn);
+    container.appendChild(info);
+    container.appendChild(nextBtn);
+
+    const table = document.getElementById('matchesTable');
+    table.insertAdjacentElement('afterend', container);
 }
 
 
@@ -407,7 +582,20 @@ function initializeMapChart(maps) {
 
 // Load data when the page loads
 document.addEventListener('DOMContentLoaded', () => {
+    loadTournamentOptions();
+    setFilterPanelOpen(false);
+
     document.addEventListener('click', event => {
+        const toggleButton = event.target.closest('#filterToggle');
+        if (toggleButton) {
+            toggleFilterPanel(event);
+            return;
+        }
+
+        const panel = document.getElementById('filterPanel');
+        if (panel && panel.classList.contains('is-open') && !panel.contains(event.target)) {
+            setFilterPanelOpen(false);
+        }
         const toggle = event.target.closest('[data-map-view]');
         if (!toggle) return;
         const nextView = toggle.dataset.mapView;

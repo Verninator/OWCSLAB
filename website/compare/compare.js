@@ -11,6 +11,9 @@ let selectedTeamBId = '';
 let currentMapView = 'map';
 let currentBanView = 'hero';
 let lastComparisonData = null;
+let tournamentOptions = [];
+let selectedTournamentIds = [];
+let tournamentMode = 'include';
 
 function capitalizeFirstLetter(val) {
     return String(val).charAt(0).toUpperCase() + String(val).slice(1);
@@ -80,6 +83,97 @@ function attachSearchHandlers(input, suggestions, teamType) {
         const teamName = button.dataset.teamName;
         setTeamSelection(teamType, teamName, teamId);
     });
+}
+
+function buildTournamentQuery() {
+  const params = new URLSearchParams({
+    tournaments: selectedTournamentIds.join(','),
+    tournamentMode
+  });
+  return params.toString();
+}
+
+function renderTournamentFilters() {
+  const container = document.getElementById('tournamentFilterOptions');
+  const modeSelect = document.getElementById('tournamentMode');
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (!tournamentOptions.length) {
+    container.innerHTML = '<div class="empty-chart-message">No tournament options available</div>';
+    return;
+  }
+
+  const optionsMarkup = tournamentOptions.map(tournament => {
+    const checked = selectedTournamentIds.includes(tournament.tournament_id);
+    return `
+      <label class="filter-option ${checked ? 'is-active' : ''}">
+        <input type="checkbox" value="${tournament.tournament_id}" ${checked ? 'checked' : ''}>
+        <span>${tournament.name}</span>
+      </label>
+    `;
+  }).join('');
+
+  container.innerHTML = optionsMarkup;
+  container.querySelectorAll('input[type="checkbox"]').forEach(input => {
+    input.addEventListener('change', handleTournamentFilterChange);
+  });
+
+  if (modeSelect) {
+    modeSelect.value = tournamentMode;
+    modeSelect.onchange = () => {
+      tournamentMode = modeSelect.value;
+      if (selectedTeamAId && selectedTeamBId) {
+        compareTeams();
+      }
+    };
+  }
+}
+
+function handleTournamentFilterChange(event) {
+  const { value, checked } = event.target;
+  const tournamentId = Number(value);
+  if (checked) {
+    if (!selectedTournamentIds.includes(tournamentId)) {
+      selectedTournamentIds.push(tournamentId);
+    }
+  } else {
+    selectedTournamentIds = selectedTournamentIds.filter(id => id !== tournamentId);
+  }
+  renderTournamentFilters();
+  if (selectedTeamAId && selectedTeamBId) {
+    compareTeams();
+  }
+}
+
+function setFilterPanelOpen(isOpen) {
+  const panel = document.getElementById('filterPanel');
+  const toggle = document.getElementById('filterToggle');
+  if (!panel || !toggle) return;
+  panel.classList.toggle('is-open', isOpen);
+  panel.classList.toggle('is-collapsed', !isOpen);
+  toggle.setAttribute('aria-expanded', String(isOpen));
+  toggle.textContent = isOpen ? 'Close filters' : 'Filter tournaments';
+}
+
+function toggleFilterPanel(event) {
+  if (event) {
+    event.stopPropagation();
+  }
+  const panel = document.getElementById('filterPanel');
+  if (!panel) return;
+  setFilterPanelOpen(!panel.classList.contains('is-open'));
+}
+
+async function loadTournamentOptions() {
+  try {
+    const response = await fetch('/api/tournaments');
+    const data = await response.json();
+    tournamentOptions = Array.isArray(data) ? data : [];
+    renderTournamentFilters();
+  } catch (error) {
+    console.warn('Failed to load tournament options', error);
+  }
 }
 
 function buildHeroIconPath(icon) {
@@ -451,6 +545,7 @@ async function loadTeams() {
 
     attachSearchHandlers(teamAInput, teamASuggestions, 'A');
     attachSearchHandlers(teamBInput, teamBSuggestions, 'B');
+    await loadTournamentOptions();
   } catch (error) {
     console.error('Failed to load teams', error);
     compareResults.innerHTML = '<p class="error-message">Unable to load team list.</p>';
@@ -469,7 +564,8 @@ async function compareTeams() {
   try {
     currentMapView = 'map';
     currentBanView = 'hero';
-    const response = await fetch(`/api/compare?teamA=${teamA}&teamB=${teamB}`);
+    const query = buildTournamentQuery();
+    const response = await fetch(`/api/compare?teamA=${teamA}&teamB=${teamB}&${query}`);
     if (!response.ok) {
       const errorData = await response.json();
       compareResults.innerHTML = `<p class="error-message">${errorData.error || 'Failed to compare teams.'}</p>`;
@@ -488,6 +584,17 @@ compareButton.addEventListener('click', compareTeams);
 window.addEventListener('DOMContentLoaded', loadTeams);
 
 document.addEventListener('click', event => {
+    const toggleButton = event.target.closest('#filterToggle');
+    if (toggleButton) {
+        toggleFilterPanel(event);
+        return;
+    }
+
+    const panel = document.getElementById('filterPanel');
+    if (panel && panel.classList.contains('is-open') && !panel.contains(event.target)) {
+        setFilterPanelOpen(false);
+    }
+
     if (event.target !== teamAInput && !teamASuggestions.contains(event.target)) {
         teamASuggestions.innerHTML = '';
     }

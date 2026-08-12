@@ -123,6 +123,119 @@ a:hover {
     gap: 8px;
 }
 
+.filter-panel {
+    background: #1a1f3a;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 20px;
+    margin-top: 16px;
+    position: relative;
+    overflow: hidden;
+}
+
+.filter-panel.is-collapsed .filter-panel-content {
+    display: none;
+}
+
+.compare-filter-panel.is-collapsed {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin-top: 0;
+    overflow: visible;
+}
+
+.filter-toggle {
+    width: 100%;
+    padding: 14px 18px;
+    background: #3b435f;
+    color: #e7ecff;
+    font-weight: 700;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.filter-toggle:hover {
+    background: #4a5375;
+}
+
+.filter-panel.is-open {
+    position: fixed;
+    inset: 48px 24px auto 24px;
+    max-height: calc(100vh - 72px);
+    z-index: 1000;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+    overflow: auto;
+    padding: 20px;
+}
+
+.filter-panel.is-open .filter-panel-content {
+    display: block;
+}
+
+.filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.filter-header h2 {
+    color: #00ff41;
+    font-size: 1.2em;
+    margin: 0;
+}
+
+.filter-mode-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-mode-label {
+    color: #c7d2ff;
+    font-size: 0.95rem;
+}
+
+.filter-mode-select {
+    background: #14182d;
+    color: #ffffff;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+
+.filter-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.filter-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.05);
+    color: #ffffff;
+    cursor: pointer;
+    user-select: none;
+}
+
+.filter-option.is-active {
+    background: rgba(0,255,65,0.18);
+    border: 1px solid rgba(0,255,65,0.35);
+}
+
+.filter-option input {
+    accent-color: #00ff41;
+}
+
 .compare-form-row label {
     color: #c7d2ff;
     font-weight: 600;

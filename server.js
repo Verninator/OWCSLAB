@@ -45,7 +45,9 @@ app.get('/api/players', async (req,res) => {
 
 app.get('/api/teams', async (req,res) => {
     try {
-        const teams = await db.getTeamsWithRoster();
+        const circuitParam = String(req.query.circuit || 'owcs').toLowerCase();
+        const circuit = ['owcs', 'owwc', 'all'].includes(circuitParam) ? circuitParam : 'owcs';
+        const teams = await db.getTeamsWithRoster(circuit);
         res.json(teams);
     } catch (error) {
         console.error('Failed to fetch team list', error);
@@ -67,10 +69,90 @@ app.get('/api/compare/teams', async (req, res) => {
     }
 })
 
+app.get('/api/tournaments', async (req, res) => {
+    try {
+        const playerIdParam = req.query.playerId;
+        const teamIdParam = req.query.teamId;
+        const mapIdParam = req.query.mapId;
+        const playerName = typeof req.query.player === 'string' ? decodeURIComponent(req.query.player) : '';
+        const teamName = typeof req.query.team === 'string' ? decodeURIComponent(req.query.team) : '';
+        const mapName = typeof req.query.map === 'string' ? decodeURIComponent(req.query.map) : '';
+
+        if (playerName) {
+            const playerId = await db.getPlayerId(playerName);
+            if (playerId) {
+                const tournaments = await db.getTournamentsForPlayer(playerId);
+                return res.json(tournaments);
+            }
+        }
+
+        if (Number.isInteger(Number(playerIdParam)) && Number(playerIdParam) > 0) {
+            const tournaments = await db.getTournamentsForPlayer(Number(playerIdParam));
+            return res.json(tournaments);
+        }
+
+        if (teamName) {
+            const teamId = await db.getTeamId(teamName);
+            if (teamId) {
+                const tournaments = await db.getTournamentsForTeam(teamId);
+                return res.json(tournaments);
+            }
+        }
+
+        if (Number.isInteger(Number(teamIdParam)) && Number(teamIdParam) > 0) {
+            const tournaments = await db.getTournamentsForTeam(Number(teamIdParam));
+            return res.json(tournaments);
+        }
+
+        if (mapName) {
+            const maps = await db.getMaps();
+            const map = maps.find(entry => normalizeKey(entry.map_name) === normalizeKey(mapName));
+            if (map) {
+                const [tournaments] = await db.pool.query(`
+                    SELECT DISTINCT tournaments.tournament_id, tournaments.name, tournaments.icon
+                    FROM team_stats
+                    INNER JOIN tournaments
+                        ON tournaments.tournament_id = team_stats.tournament_id
+                    WHERE team_stats.map_id = ?
+                    ORDER BY tournaments.name ASC
+                `, [map.map_id]);
+                return res.json(tournaments);
+            }
+        }
+
+        if (Number.isInteger(Number(mapIdParam)) && Number(mapIdParam) > 0) {
+            const [tournaments] = await db.pool.query(`
+                SELECT DISTINCT tournaments.tournament_id, tournaments.name, tournaments.icon
+                FROM team_stats
+                INNER JOIN tournaments
+                    ON tournaments.tournament_id = team_stats.tournament_id
+                WHERE team_stats.map_id = ?
+                ORDER BY tournaments.name ASC
+            `, [Number(mapIdParam)]);
+            return res.json(tournaments);
+        }
+
+        const [tournaments] = await db.pool.query(`
+            SELECT tournament_id, name, icon
+            FROM tournaments
+            ORDER BY name ASC
+        `);
+        res.json(tournaments);
+    } catch (error) {
+        console.error('Failed to fetch tournaments', error);
+        res.status(500).json({ error: 'Unable to fetch tournaments' });
+    }
+});
+
 app.get('/api/compare', async (req, res) => {
     try {
         const teamAName = req.query.teamA;
         const teamBName = req.query.teamB;
+        const tournamentIds = String(req.query.tournaments || '')
+            .split(',')
+            .map(value => Number(value))
+            .filter(value => Number.isInteger(value) && value > 0);
+        const tournamentMode = req.query.tournamentMode === 'exclude' ? 'exclude' : 'include';
         if (!teamAName || !teamBName || teamAName === teamBName) {
             return res.status(400).json({ error: 'Please provide two different teams to compare.' });
         }
@@ -85,7 +167,7 @@ app.get('/api/compare', async (req, res) => {
         const teamA = teamADetails[0];
         const teamB = teamBDetails[0];
 
-        const h2hRows = await db.getHeadtoHead(teamAId,teamBId)
+        const h2hRows = await db.getHeadtoHead(teamAId, teamBId, tournamentIds, tournamentMode)
 
         const mapResults = {};
         const headToHead = { played: 0, teamA_wins: 0, teamB_wins: 0, draws: 0 };
@@ -117,7 +199,7 @@ app.get('/api/compare', async (req, res) => {
             }
         }
 
-        const teamAMatchRows = await db.getHeadtoHeadMatches(teamAId,teamBId)
+        const teamAMatchRows = await db.getHeadtoHeadMatches(teamAId, teamBId, tournamentIds, tournamentMode)
 
         const matchHistory = teamAMatchRows.map(row => {
             const teamAIsHome = row.team_1_id === teamAId;
@@ -145,14 +227,14 @@ app.get('/api/compare', async (req, res) => {
                 result
             };
         });
-        const teamATotalsRows = await db.getTeamTotalStats(teamAId)
-        const teamBTotalsRows = await db.getTeamTotalStats(teamBId)
+        const teamATotalsRows = await db.getTeamTotalStats(teamAId, tournamentIds, tournamentMode)
+        const teamBTotalsRows = await db.getTeamTotalStats(teamBId, tournamentIds, tournamentMode)
 
         const totalsA = teamATotalsRows[0];
         const totalsB = teamBTotalsRows[0];
 
-        const teamAMapStats = await db.getTeamMapPlayed(teamAId)
-        const teamBMapStats = await db.getTeamMapPlayed(teamBId)
+        const teamAMapStats = await db.getTeamMapPlayed(teamAId, tournamentIds, tournamentMode)
+        const teamBMapStats = await db.getTeamMapPlayed(teamBId, tournamentIds, tournamentMode)
 
         const averagesA = teamAMapStats[0];
         const averagesB = teamBMapStats[0];
@@ -201,7 +283,7 @@ app.get('/api/compare', async (req, res) => {
             matches: matchHistory
         };
 
-        const banRows = await db.getHeadtoHeadBans(teamAId, teamBId)
+        const banRows = await db.getHeadtoHeadBans(teamAId, teamBId, tournamentIds, tournamentMode)
 
         const banGroups = { [teamAId]: [], [teamBId]: [] };
         for (const row of banRows) {
@@ -238,6 +320,11 @@ function normalizeKey(value) {
 app.get('/api/maps/:name', async (req, res) => {
 
         const requestedName = normalizeKey(decodeURIComponent(req.params.name).replace(/\+/g, ' '));
+        const tournamentIds = String(req.query.tournaments || '')
+            .split(',')
+            .map(value => Number(value))
+            .filter(value => Number.isInteger(value) && value > 0);
+        const tournamentMode = req.query.tournamentMode === 'exclude' ? 'exclude' : 'include';
 
         const maps = await db.getMaps()
 
@@ -246,8 +333,8 @@ app.get('/api/maps/:name', async (req, res) => {
             return res.status(404).json({ error: 'Map not found' });
         }
 
-        const banStats = await db.getMapBanStats(map.map_id)
-        const teamStats = await db.getMapTeamStats(map.map_id)
+        const banStats = await db.getMapBanStats(map.map_id, tournamentIds, tournamentMode)
+        const teamStats = await db.getMapTeamStats(map.map_id, tournamentIds, tournamentMode)
 
         
 
@@ -299,32 +386,39 @@ app.get('/api/maps', async (req, res) => {
 })
 
 app.get('/api/players/:name', async (req,res) => {
-    // Normalize URL-encoded spaces and pluses in the name param
     const playerName = decodeURIComponent(req.params.name).replace(/\+/g, ' ');
+    const tournamentIds = String(req.query.tournaments || '')
+        .split(',')
+        .map(value => Number(value))
+        .filter(value => Number.isInteger(value) && value > 0);
+    const tournamentMode = req.query.tournamentMode === 'exclude' ? 'exclude' : 'include';
     let result = {}
     let player_id = await db.getPlayerId(playerName)
-    let team_id = await db.getTeamIdFromPlayer(player_id)
-    result["matches"] = await db.getMatchesById(parseInt(team_id))
-    result["stats"] = await db.getPlayerStats(player_id)
-    result["total"] = await db.getTotalStats(player_id)
-    result["avg"] = await db.getAvgStats(player_id)
+    result["matches"] = await db.getPlayerMatchesById(player_id, tournamentIds, tournamentMode)
+    result["stats"] = await db.getPlayerStats(player_id, tournamentIds, tournamentMode)
+    result["total"] = await db.getTotalStats(player_id, tournamentIds, tournamentMode)
+    result["avg"] = await db.getAvgStats(player_id, tournamentIds, tournamentMode)
     result["player_details"] = await db.getPlayerDetails(player_id)
-    result["maps"] = await db.getPlayerMapStats(player_id)
+    result["maps"] = await db.getPlayerMapStats(player_id, tournamentIds, tournamentMode)
     result["heroes"] = await db.getPreferredHeroes(player_id)
     res.send(result);
 })
 
 app.get('/api/teams/:name', async (req,res) => {
-    // Normalize URL-encoded spaces and pluses in the name param
     const teamName = decodeURIComponent(req.params.name).replace(/\+/g, ' ');
+    const tournamentIds = String(req.query.tournaments || '')
+        .split(',')
+        .map(value => Number(value))
+        .filter(value => Number.isInteger(value) && value > 0);
+    const tournamentMode = req.query.tournamentMode === 'exclude' ? 'exclude' : 'include';
     let result = {}
     let team_id = await db.getTeamId(teamName)
     result["team_details"] = await db.getTeamDetails(team_id)
-    result["matches"] = await db.getMatchesById(parseInt(team_id))
+    result["matches"] = await db.getMatchesById(parseInt(team_id), tournamentIds, tournamentMode)
     result["roster"] = await db.getRoster(team_id)
-    result["maps"] = await db.getTeamMapStats(team_id)
-    result["bans"] = await db.getBanStats(team_id)
-    result["tournaments"] = await db.getRecentTournaments(team_id)
+    result["maps"] = await db.getTeamMapStats(team_id, tournamentIds, tournamentMode)
+    result["bans"] = await db.getBanStats(team_id, tournamentIds, tournamentMode)
+    result["tournaments"] = await db.getRecentTournaments(team_id, tournamentIds, tournamentMode)
     res.send(result);
 })
 

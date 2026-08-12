@@ -89,6 +89,96 @@ a:hover {
     padding: 24px 20px 40px;
 }
 
+.map-filter-section {
+    margin-bottom: 20px;
+}
+
+.filter-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    background: rgba(20, 24, 45, 0.9);
+}
+
+.filter-panel.is-collapsed .filter-panel-content {
+    display: none;
+}
+
+.filter-toggle {
+    align-self: flex-start;
+    border: none;
+    border-radius: 999px;
+    padding: 8px 14px;
+    background: #2ecc71;
+    color: #0a0e27;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.filter-header h2 {
+    color: #c7d2ff;
+    font-size: 1rem;
+    margin: 0;
+}
+
+.filter-mode-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-mode-label {
+    color: #c7d2ff;
+    font-size: 0.9rem;
+}
+
+.filter-mode-select {
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: #0a0e27;
+    color: #ffffff;
+    padding: 6px 8px;
+}
+
+.filter-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.filter-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.04);
+    color: #dfe7ff;
+    cursor: pointer;
+}
+
+.filter-option.is-active {
+    background: rgba(46, 204, 113, 0.2);
+    border-color: rgba(46, 204, 113, 0.45);
+}
+
+.empty-chart-message {
+    color: #a7b2ff;
+    font-size: 0.95rem;
+}
+
 .map-list-intro {
     margin-bottom: 28px;
 }

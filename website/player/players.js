@@ -15,6 +15,39 @@ const state = {
     avg: { data: [], page: 1, sortKey: 'name', sortOrder: 'asc', pageSize: 20, searchTerm: '' }
 };
 
+function getRoleIconPath(role) {
+    const normalizedRole = String(role || '').trim();
+    if (!normalizedRole) return '';
+
+    if (normalizedRole.toLowerCase() === 'dps') {
+        return '/content/images/roles/DPS.webp';
+    }
+
+    const titleCaseRole = normalizedRole.charAt(0).toUpperCase() + normalizedRole.slice(1).toLowerCase();
+    return `/content/images/roles/${encodeURIComponent(titleCaseRole)}.webp`;
+}
+
+function renderRoleCell(td, role) {
+    const label = String(role || '').trim();
+    const iconPath = getRoleIconPath(label);
+
+    td.classList.add('role-cell');
+    if (!iconPath) {
+        td.textContent = label;
+        return;
+    }
+
+    const icon = document.createElement('img');
+    icon.src = iconPath;
+    icon.alt = label;
+    icon.title = label;
+    icon.className = 'role-icon-cell';
+    icon.addEventListener('error', () => {
+        icon.replaceWith(document.createTextNode(label));
+    });
+    td.appendChild(icon);
+}
+
 function buildHeaderRow(container, datasetKey) {
     container.innerHTML = '';
     columns.forEach(column => {
@@ -79,6 +112,8 @@ function renderTable(datasetKey) {
                 link.textContent = row.name;
                 link.className = 'player-link';
                 td.appendChild(link);
+            } else if (column.key === 'role') {
+                renderRoleCell(td, row.role);
             } else if (column.key === 'team') {
                 const link = document.createElement('a');
                 link.href = `/teams/${encodeURIComponent(row.team)}`;

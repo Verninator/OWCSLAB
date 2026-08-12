@@ -25,6 +25,22 @@
     <div class="container">
         <!-- Player Header Section -->
         <div class="profile-header">
+            <div class="filter-panel player-header-filter is-collapsed" id="filterPanel">
+                <button type="button" class="filter-toggle" id="filterToggle">Filter</button>
+                <div class="filter-panel-content">
+                    <div class="filter-header">
+                        <h2>Tournament Filter</h2>
+                        <div class="filter-mode-row">
+                            <label class="filter-mode-label" for="tournamentMode">Mode</label>
+                            <select id="tournamentMode" class="filter-mode-select">
+                                <option value="include">Include selected</option>
+                                <option value="exclude">Exclude selected</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="tournamentFilterOptions" class="filter-options"></div>
+                </div>
+            </div>
 
             <div class="player-info">
                 <div>
@@ -34,6 +50,12 @@
                             <a id="teamLink" class="team-link" href="#">
                                 <img src="" alt="Team Logo" class="team-logo" id="teamLogo">
                                 <p class="team-name" id="teamName">Team Name</p>
+                            </a>
+                        </div>
+                        <div class="owwc-team-logo-container is-hidden" id="owwcTeamContainer">
+                            <a id="owwcTeamLink" class="team-link" href="#">
+                                <img src="" alt="OWWC Team Logo" class="owwc-team-logo" id="owwcTeamLogo">
+                                <p class="team-name" id="owwcTeamName">OWWC Team</p>
                             </a>
                         </div>
                         <h1 class="player-name" id="playerName">ProGamer</h1>

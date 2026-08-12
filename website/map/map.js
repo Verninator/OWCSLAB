@@ -1,4 +1,7 @@
 const mapDetailContainer = document.getElementById('mapDetailContainer');
+let tournamentOptions = [];
+let selectedTournamentIds = [];
+let tournamentMode = 'include';
 
 function getMapSlug() {
   const pathParts = window.location.pathname.split('/').filter(Boolean);
@@ -29,6 +32,94 @@ function buildTeamRow(team) {
         <td>${team.win_rate}%</td>
     </tr>
   `;
+}
+
+function buildTournamentQuery() {
+  const params = new URLSearchParams({
+    tournaments: selectedTournamentIds.join(','),
+    tournamentMode
+  });
+  return params.toString();
+}
+
+async function loadTournamentOptions() {
+  try {
+    const params = new URLSearchParams({ map: getMapSlug() });
+    const res = await fetch(`/api/tournaments?${params.toString()}`);
+    const data = await res.json();
+    tournamentOptions = Array.isArray(data) ? data : [];
+    renderTournamentFilters();
+  } catch (error) {
+    console.warn('Failed to load tournament options', error);
+  }
+}
+
+function renderTournamentFilters() {
+  const container = document.getElementById('tournamentFilterOptions');
+  const modeSelect = document.getElementById('tournamentMode');
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (!tournamentOptions.length) {
+    container.innerHTML = '<div class="empty-chart-message">No tournament options available</div>';
+    return;
+  }
+
+  const optionsMarkup = tournamentOptions.map(tournament => {
+    const checked = selectedTournamentIds.includes(tournament.tournament_id);
+    return `
+      <label class="filter-option ${checked ? 'is-active' : ''}">
+        <input type="checkbox" value="${tournament.tournament_id}" ${checked ? 'checked' : ''}>
+        <span>${tournament.name}</span>
+      </label>
+    `;
+  }).join('');
+
+  container.innerHTML = optionsMarkup;
+  container.querySelectorAll('input[type="checkbox"]').forEach(input => {
+    input.addEventListener('change', handleTournamentFilterChange);
+  });
+
+  if (modeSelect) {
+    modeSelect.value = tournamentMode;
+    modeSelect.onchange = () => {
+      tournamentMode = modeSelect.value;
+      loadMapDetails();
+    };
+  }
+}
+
+function handleTournamentFilterChange(event) {
+  const { value, checked } = event.target;
+  const tournamentId = Number(value);
+  if (checked) {
+    if (!selectedTournamentIds.includes(tournamentId)) {
+      selectedTournamentIds.push(tournamentId);
+    }
+  } else {
+    selectedTournamentIds = selectedTournamentIds.filter(id => id !== tournamentId);
+  }
+  renderTournamentFilters();
+  loadMapDetails();
+}
+
+function setFilterPanelOpen(isOpen) {
+  const panel = document.getElementById('filterPanel');
+  const toggle = document.getElementById('filterToggle');
+  if (!panel || !toggle) return;
+  panel.classList.toggle('is-open', isOpen);
+  panel.classList.toggle('is-collapsed', !isOpen);
+  toggle.setAttribute('aria-expanded', String(isOpen));
+  toggle.textContent = isOpen ? 'Close' : 'Filter';
+}
+
+function toggleFilterPanel(event) {
+  if (event) {
+    event.stopPropagation();
+  }
+  const panel = document.getElementById('filterPanel');
+  if (!panel) return;
+  setFilterPanelOpen(!panel.classList.contains('is-open'));
 }
 
 function renderMapDetails(map) {
@@ -97,7 +188,8 @@ async function loadMapDetails() {
   const slug = getMapSlug();
 
   try {
-    const response = await fetch(`/api/maps/${encodeURIComponent(slug)}`);
+    const query = buildTournamentQuery();
+    const response = await fetch(`/api/maps/${encodeURIComponent(slug)}?${query}`);
     if (!response.ok) {
       throw new Error('Map not found');
     }
@@ -112,4 +204,20 @@ async function loadMapDetails() {
   }
 }
 
-window.addEventListener('DOMContentLoaded', loadMapDetails);
+window.addEventListener('DOMContentLoaded', () => {
+  const toggle = document.getElementById('filterToggle');
+  if (toggle) {
+    toggle.addEventListener('click', toggleFilterPanel);
+  }
+
+  document.addEventListener('click', (event) => {
+    const panel = document.getElementById('filterPanel');
+    if (!panel || panel.classList.contains('is-collapsed')) return;
+    if (!panel.contains(event.target)) {
+      setFilterPanelOpen(false);
+    }
+  });
+
+  loadTournamentOptions();
+  loadMapDetails();
+});

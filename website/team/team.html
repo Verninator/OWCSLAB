@@ -48,6 +48,22 @@
         <div class="section-header">
             <h2>Recent Tournaments</h2>
         </div>
+        <div class="filter-panel is-collapsed" id="filterPanel">
+            <button type="button" class="filter-toggle" id="filterToggle">Filter tournaments</button>
+            <div class="filter-panel-content">
+                <div class="filter-header">
+                    <h2>Tournament Filter</h2>
+                    <div class="filter-mode-row">
+                        <label class="filter-mode-label" for="tournamentMode">Mode</label>
+                        <select id="tournamentMode" class="filter-mode-select">
+                            <option value="include">Include selected</option>
+                            <option value="exclude">Exclude selected</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="tournamentFilterOptions" class="filter-options"></div>
+            </div>
+        </div>
         <table class="tournaments-table" id="tournamentsTable">
             <thead>
                 <tr>
