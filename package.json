@@ -1,20 +1,26 @@
 {
   "name": "website",
   "version": "1.0.0",
-  "description": "",
+  "description": "OWCS stats website API and frontend",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "echo \"No tests configured\""
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "http": "^0.0.1-security",
+    "mssql": "^12.7.0",
     "mysql2": "^3.23.1"
   }
 }

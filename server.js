@@ -27,9 +27,54 @@ app.use('/teams', express.static(__dirname + '/website/team'));
 app.use('/maps', express.static(__dirname + '/website/map'));
 // Serve compare page assets under /compare
 app.use('/compare', express.static(__dirname + '/website/compare'));
+app.use('/home', express.static(__dirname + '/website/home'));
 
 app.get('/', (req,res) => {
-    res.send("Hello World!!");
+    res.sendFile('website/home/index.html', { root: __dirname });
+});
+
+app.get('/api/home', async (req, res) => {
+    try {
+        const [[matchCountRow]] = await db.pool.query(`
+            SELECT COUNT(*) AS total_matches
+            FROM matches
+        `);
+
+        const [[playerStatCountRow]] = await db.pool.query(`
+            SELECT COUNT(*) AS total_player_stats
+            FROM player_stats
+        `);
+
+        const [recentMatches] = await db.pool.query(`
+            SELECT
+                m.match_id,
+                m.date,
+                t.name AS tournament,
+                t.icon AS tournament_icon,
+                team_1.name AS team_1_name,
+                team_1.icon AS team_1_icon,
+                team_2.name AS team_2_name,
+                team_2.icon AS team_2_icon,
+                m.team_1_score,
+                m.team_2_score,
+                m.ref_link
+            FROM matches m
+            INNER JOIN tournaments t ON t.tournament_id = m.tournament_id
+            INNER JOIN teams team_1 ON team_1.team_id = m.team_1_id
+            INNER JOIN teams team_2 ON team_2.team_id = m.team_2_id
+            ORDER BY m.date DESC
+            LIMIT 12
+        `);
+
+        res.json({
+            totalMatches: Number(matchCountRow?.total_matches) || 0,
+            totalPlayerStats: Number(playerStatCountRow?.total_player_stats) || 0,
+            recentMatches
+        });
+    } catch (error) {
+        console.error('Failed to fetch homepage data', error);
+        res.status(500).json({ error: 'Unable to fetch homepage data' });
+    }
 });
 
 
@@ -57,12 +102,12 @@ app.get('/api/teams', async (req,res) => {
 
 app.get('/api/compare/teams', async (req, res) => {
     try {
-        const [teams] = await db.pool.query(`
+        const teams = await db.pool.request().query(`
             SELECT team_id, name AS team_name, region, icon
             FROM teams
             ORDER BY name ASC
         `);
-        res.json(teams);
+        res.json(teams.recordset);
     } catch (error) {
         console.error('Failed to fetch compare team list', error);
         res.status(500).json({ error: 'Unable to fetch compare team list' });
@@ -108,36 +153,36 @@ app.get('/api/tournaments', async (req, res) => {
             const maps = await db.getMaps();
             const map = maps.find(entry => normalizeKey(entry.map_name) === normalizeKey(mapName));
             if (map) {
-                const [tournaments] = await db.pool.query(`
+                const results = await db.pool.request().query(`
                     SELECT DISTINCT tournaments.tournament_id, tournaments.name, tournaments.icon
                     FROM team_stats
                     INNER JOIN tournaments
                         ON tournaments.tournament_id = team_stats.tournament_id
-                    WHERE team_stats.map_id = ?
+                    WHERE team_stats.map_id = ${map.map_id}
                     ORDER BY tournaments.name ASC
-                `, [map.map_id]);
-                return res.json(tournaments);
+                `);
+                return res.json(results.recordset);
             }
         }
 
         if (Number.isInteger(Number(mapIdParam)) && Number(mapIdParam) > 0) {
-            const [tournaments] = await db.pool.query(`
+            const tournaments = await db.pool.request().query(`
                 SELECT DISTINCT tournaments.tournament_id, tournaments.name, tournaments.icon
                 FROM team_stats
                 INNER JOIN tournaments
                     ON tournaments.tournament_id = team_stats.tournament_id
-                WHERE team_stats.map_id = ?
+                WHERE team_stats.map_id = ${Number(mapIdParam)}
                 ORDER BY tournaments.name ASC
             `, [Number(mapIdParam)]);
-            return res.json(tournaments);
+            return res.json(tournaments.recordset);
         }
 
-        const [tournaments] = await db.pool.query(`
+        const tournaments = await db.pool.request().query(`
             SELECT tournament_id, name, icon
             FROM tournaments
             ORDER BY name ASC
         `);
-        res.json(tournaments);
+        res.json(tournaments.recordset);
     } catch (error) {
         console.error('Failed to fetch tournaments', error);
         res.status(500).json({ error: 'Unable to fetch tournaments' });
@@ -156,10 +201,8 @@ app.get('/api/compare', async (req, res) => {
         if (!teamAName || !teamBName || teamAName === teamBName) {
             return res.status(400).json({ error: 'Please provide two different teams to compare.' });
         }
-
         const teamAId = Number(teamAName) || await db.getTeamId(teamAName);
         const teamBId = Number(teamBName) || await db.getTeamId(teamBName);
-
         const teamADetails = await db.getTeamDetails(teamAId)
         const teamBDetails = await db.getTeamDetails(teamBId)
 
@@ -212,6 +255,8 @@ app.get('/api/compare', async (req, res) => {
                 match_id: row.match_id,
                 date: row.date,
                 tournament: row.tournament,
+                tournament_icon: row.tournament_icon,
+                ref_link: row.ref_link,
                 teamA: {
                     id: teamAId,
                     name: teamADetails.name,
@@ -461,5 +506,5 @@ app.get('/teams', (req,res) => {
 
 
 // PORT
-const port = process.env.PORT;
-app.listen(3000, () => console.log(`Listening on port ${port}....`));
+const port = Number(process.env.PORT) || 8080;
+app.listen(port, () => console.log(`Listening on port ${port}....`));

@@ -1,0 +1,16 @@
+# Ignore files that are not needed in App Engine deployments.
+.gcloudignore
+.git
+.gitignore
+
+# Local environment and editor files
+.env
+.vscode/
+
+# Dependencies are installed during build on App Engine
+node_modules/
+
+# Local artifacts
+backup.json
+npm-debug.log*
+yarn-error.log*

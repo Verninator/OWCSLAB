@@ -1,7 +1,9 @@
 const mapDetailContainer = document.getElementById('mapDetailContainer');
+const TEAM_PAGE_SIZE = 10;
 let tournamentOptions = [];
 let selectedTournamentIds = [];
 let tournamentMode = 'include';
+let activeTeamPage = 1;
 
 function getMapSlug() {
   const pathParts = window.location.pathname.split('/').filter(Boolean);
@@ -122,6 +124,59 @@ function toggleFilterPanel(event) {
   setFilterPanelOpen(!panel.classList.contains('is-open'));
 }
 
+function buildTeamTablePagination(map) {
+  const totalTeams = map.teams.length;
+  const totalPages = Math.max(1, Math.ceil(totalTeams / TEAM_PAGE_SIZE));
+  if (totalTeams <= TEAM_PAGE_SIZE) return '';
+
+  activeTeamPage = Math.min(activeTeamPage, totalPages);
+
+  return `
+    <div class="team-table-pagination">
+      <button
+        type="button"
+        class="team-page-button"
+        data-direction="prev"
+        ${activeTeamPage === 1 ? 'disabled' : ''}
+        aria-label="Previous page"
+      >
+        ‹
+      </button>
+      <span class="team-page-status">Page ${activeTeamPage} of ${totalPages}</span>
+      <button
+        type="button"
+        class="team-page-button"
+        data-direction="next"
+        ${activeTeamPage >= totalPages ? 'disabled' : ''}
+        aria-label="Next page"
+      >
+        ›
+      </button>
+    </div>
+  `;
+}
+
+function bindTeamTablePaginationHandlers(map) {
+  const buttons = document.querySelectorAll('.team-page-button');
+  if (!buttons.length) return;
+
+  buttons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const direction = button.dataset.direction;
+      const totalPages = Math.max(1, Math.ceil(map.teams.length / TEAM_PAGE_SIZE));
+
+      if (direction === 'prev') {
+        activeTeamPage = Math.max(1, activeTeamPage - 1);
+      } else if (direction === 'next') {
+        activeTeamPage = Math.min(totalPages, activeTeamPage + 1);
+      }
+
+      mapDetailContainer.innerHTML = renderMapDetails(map);
+      bindTeamTablePaginationHandlers(map);
+    });
+  });
+}
+
 function renderMapDetails(map) {
   const imageHtml = map.image
     ? `<img src="../${map.image}" alt="${map.map_name}" loading="lazy">`
@@ -131,9 +186,14 @@ function renderMapDetails(map) {
     ? map.bans.map(buildBanPill).join('')
     : '<div class="no-bans">No bans available.</div>';
 
-  const teamRows = map.teams.length
-    ? map.teams.map(buildTeamRow).join('')
-    : '<tr><td colspan="6">No active team stats available.</td></tr>';
+  const totalPages = Math.max(1, Math.ceil(map.teams.length / TEAM_PAGE_SIZE));
+  activeTeamPage = Math.min(activeTeamPage, totalPages);
+  const startIndex = (activeTeamPage - 1) * TEAM_PAGE_SIZE;
+  const visibleTeams = map.teams.slice(startIndex, startIndex + TEAM_PAGE_SIZE);
+
+  const teamRows = visibleTeams.length
+    ? visibleTeams.map(buildTeamRow).join('')
+    : '<tr><td colspan="7">No active team stats available.</td></tr>';
 
   return `
     <section class="map-card-group">
@@ -178,6 +238,7 @@ function renderMapDetails(map) {
               </tbody>
             </table>
           </div>
+          ${buildTeamTablePagination(map)}
         </div>
       </div>
     </section>
@@ -186,6 +247,7 @@ function renderMapDetails(map) {
 
 async function loadMapDetails() {
   const slug = getMapSlug();
+  activeTeamPage = 1;
 
   try {
     const query = buildTournamentQuery();
@@ -198,6 +260,7 @@ async function loadMapDetails() {
     document.getElementById('mapTitle').textContent = map.map_name;
     document.getElementById('mapDescription').textContent = `Detailed stats for ${map.map_name} (${map.mode}).`;
     mapDetailContainer.innerHTML = renderMapDetails(map);
+    bindTeamTablePaginationHandlers(map);
   } catch (error) {
     console.error('Failed to load map details', error);
     mapDetailContainer.innerHTML = '<p class="error-message">Unable to load map details at this time.</p>';

@@ -318,7 +318,7 @@ async function loadTeams() {
             }
             if (row.player_id) {
                 const includePlayer = Boolean(row.player_active);
-                if (includePlayer) {
+                if (includePlayer || currentCircuit == "owwc"){
                     team.players.push({
                         player_id: row.player_id,
                         player_name: row.player_name,

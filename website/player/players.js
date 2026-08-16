@@ -140,6 +140,8 @@ function renderTable(datasetKey) {
     buildHeaderRow(document.getElementById(`${datasetKey}StatsHeader`), `${datasetKey}`);
 }
 
+
+
 function renderPagination(datasetKey, filteredLength) {
     const { page, pageSize } = state[datasetKey];
     const container = document.getElementById(`${datasetKey}Pagination`);

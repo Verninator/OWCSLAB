@@ -2,12 +2,21 @@
 let statsChart = null;
 let chartData = null;
 let currentMapView = 'map';
+let mapSectionCollapsed = false;
 let playerMapData = [];
 let tournamentOptions = [];
 let selectedTournamentIds = [];
 let tournamentMode = 'include';
+let currentPlayerTeam = { name: '', icon: '' };
+let recentMatches = [];
+let recentMatchesPage = 0;
+const RECENT_MATCHES_PAGE_SIZE = 10;
 
 function formatCompactNumber(number) {
+    if (!Number.isFinite(Number(number))) {
+        return 0;
+    }
+    number = Number(number);
   if (number < 1000) {
     return number;
   } else if (number >= 1000 && number < 1_000_000) {
@@ -19,6 +28,15 @@ function formatCompactNumber(number) {
   } else if (number >= 1_000_000_000_000 && number < 1_000_000_000_000_000) {
     return (number / 1_000_000_000_000).toFixed(1) + "T";
   }
+}
+
+function resolveAssetPath(value) {
+        const path = String(value || '').trim();
+        if (!path) return '';
+        if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('/')) {
+                return path;
+        }
+        return `/${path}`;
 }
 
 function buildTournamentQuery() {
@@ -132,6 +150,24 @@ function toggleFilterPanel(event) {
     setFilterPanelOpen(!panel.classList.contains('is-open'));
 }
 
+function setMapSectionCollapsed(isCollapsed) {
+    const section = document.querySelector('.map-graph-section');
+    const toggle = document.querySelector('[data-map-collapse-toggle]');
+    if (!section || !toggle) return;
+
+    mapSectionCollapsed = isCollapsed;
+    section.classList.toggle('is-collapsed', isCollapsed);
+    toggle.setAttribute('aria-expanded', String(!isCollapsed));
+    toggle.textContent = isCollapsed ? 'Expand' : 'Collapse';
+}
+
+function toggleMapSection(event) {
+    if (event) {
+        event.stopPropagation();
+    }
+    setMapSectionCollapsed(!mapSectionCollapsed);
+}
+
 // Fetch player data from API and populate the page
 async function loadPlayerData() {
     // Determine player identifier from path (`/players/:id` or `/players/:name`) or `?id=` query
@@ -157,8 +193,11 @@ async function loadPlayerData() {
 
     if (!data) return;
 
+    const playerDetails = data.player_details || {};
+    const primaryTeamName = String(playerDetails.team || '').trim();
+    const primaryTeamIcon = String(playerDetails.team_icon || '').trim();
 
-    window.top.document.title  = data.player_details.name
+    window.top.document.title = playerDetails.name || 'Player Profile';
 
 
     // Update player name (always has a value)
@@ -166,32 +205,49 @@ async function loadPlayerData() {
 
 
     const playerNameEl = document.getElementById('playerName');
-    if (playerNameEl) playerNameEl.textContent = data.player_details.name;
+    if (playerNameEl) playerNameEl.textContent = playerDetails.name || 'Unknown Player';
 
     
     // Update role icon (always has a value)
     const roleIconEl = document.getElementById('roleIcon');
-    let roleIconSrc;
-    roleIconSrc = `../content/images/roles/${data.player_details.role}.webp` 
-    if (roleIconEl) roleIconEl.src = roleIconSrc;
+    if (roleIconEl) {
+        if (playerDetails.role) {
+            roleIconEl.src = `../content/images/roles/${playerDetails.role}.webp`;
+            roleIconEl.style.display = '';
+        } else {
+            roleIconEl.removeAttribute('src');
+            roleIconEl.style.display = 'none';
+        }
+    }
     
-    // Update team name (always has a value)
+    // Update team name (can be missing)
     const teamNameEl = document.getElementById('teamName');
-    if (teamNameEl) teamNameEl.textContent = data.player_details.team;
+    if (teamNameEl) teamNameEl.textContent = primaryTeamName || 'No Team';
     
-    // Update team logo (always has a value)
+    // Update team logo (can be missing)
     const teamLogoEl = document.getElementById('teamLogo');
-    if (teamLogoEl) teamLogoEl.src = "../" + data.player_details.team_icon;
-
+    if (teamLogoEl) {
+        if (primaryTeamIcon) {
+            teamLogoEl.src = resolveAssetPath(primaryTeamIcon);
+            teamLogoEl.style.display = '';
+        } else {
+            teamLogoEl.removeAttribute('src');
+            teamLogoEl.style.display = 'none';
+        }
+    }
+    currentPlayerTeam = {
+        name: primaryTeamName,
+        icon: primaryTeamIcon
+    };
     const owwcTeamContainerEl = document.getElementById('owwcTeamContainer');
     const owwcTeamLogoEl = document.getElementById('owwcTeamLogo');
     const owwcTeamLinkEl = document.getElementById('owwcTeamLink');
     const owwcTeamNameEl = document.getElementById('owwcTeamName');
     if (owwcTeamContainerEl && owwcTeamLogoEl && owwcTeamLinkEl && owwcTeamNameEl) {
-        const owwcIcon = data.player_details.owwc_team_icon;
-        const owwcTeamName = data.player_details.owwc_team_name;
+        const owwcIcon = playerDetails.owwc_team_icon;
+        const owwcTeamName = playerDetails.owwc_team_name;
         if (owwcIcon && owwcTeamName) {
-            owwcTeamLogoEl.src = "../" + owwcIcon;
+            owwcTeamLogoEl.src = resolveAssetPath(owwcIcon);
             owwcTeamNameEl.textContent = owwcTeamName;
             owwcTeamLinkEl.href = `/teams/${encodeURIComponent(owwcTeamName)}`;
             owwcTeamContainerEl.classList.remove('is-hidden');
@@ -205,8 +261,12 @@ async function loadPlayerData() {
 
     // Make team logo/name link to the team page
     const teamLinkEl = document.getElementById('teamLink');
-    if (teamLinkEl && data.player_details.team) {
-        teamLinkEl.href = `/teams/${encodeURIComponent(data.player_details.team)}`;
+    if (teamLinkEl) {
+        if (primaryTeamName) {
+            teamLinkEl.href = `/teams/${encodeURIComponent(primaryTeamName)}`;
+        } else {
+            teamLinkEl.href = '#';
+        }
     }
     
     
@@ -221,9 +281,10 @@ async function loadPlayerData() {
     ];
     const totalStatKeys = ['eliminations', 'assists', 'deaths', 'damage', 'healing', 'mitigation'];
     
+    const totalData = data.total || {};
     totalStatIds.forEach((id, index) => {
         const el = document.getElementById(id);
-        if (el) el.textContent = formatCompactNumber(data.total[totalStatKeys[index]]) ;
+        if (el) el.textContent = formatCompactNumber(totalData[totalStatKeys[index]]);
     });
 
     // Update average stats (all have values)
@@ -237,121 +298,163 @@ async function loadPlayerData() {
     ];
     const avgStatKeys = ['eliminations', 'assists', 'deaths', 'damage', 'healing', 'mitigation'];
 
+    const avgData = data.avg || {};
     avgStatIds.forEach((id, index) => {
         const el = document.getElementById(id);
-        if (el) el.textContent = formatCompactNumber(parseFloat(data.avg[avgStatKeys[index]]).toFixed(1));
+        const statValue = Number(avgData[avgStatKeys[index]]);
+        if (el) el.textContent = Number.isFinite(statValue)
+            ? formatCompactNumber(Number(statValue.toFixed(1)))
+            : 0;
     });
     
-    // Update preferred heroes (always has 3 heroes)
+    // Update preferred heroes (can be empty)
     const heroesContainer = document.getElementById('heroesContainer');
     if (heroesContainer) {
         heroesContainer.innerHTML = ''; // Clear existing heroes
-        
-        data.heroes.forEach(hero => {
+
+        const heroes = Array.isArray(data.heroes)
+            ? data.heroes.filter(hero => hero && (hero.name || hero.icon))
+            : [];
+
+        if (!heroes.length) {
+            heroesContainer.innerHTML = '<div class="empty-chart-message">No preferred heroes available.</div>';
+        }
+
+        heroes.forEach(hero => {
             const heroCard = document.createElement('div');
             heroCard.className = 'hero-card';
             heroCard.innerHTML = `
-                <img src="../${hero.icon}" alt="${hero.name}" class="hero-image">
-                <div class="hero-name">${hero.name}</div>
+                <img src="${resolveAssetPath(hero.icon)}" alt="${hero.name || 'Hero'}" class="hero-image">
+                <div class="hero-name">${hero.name || 'Unknown Hero'}</div>
             `;
             heroesContainer.appendChild(heroCard);
         });
     }
-    // Update match history table
-    populateMatchesTable(data.matches);
+    // Update recent matches table
+    renderRecentMatches(data.matches || [], true);
     
     // Initialize chart with match history
     initializeStatChart(data.stats);
     initializeMapChart(data.maps);
 }
 
-// Populate matches table with data
-let allMatches = [];
-let matchesPage = 0;
-const MATCHES_PAGE_SIZE = 10;
+function renderRecentMatches(matches, resetPage = false) {
+    const tbody = document.getElementById('recentMatchesBody');
+    if (!tbody) return;
 
-function populateMatchesTable(matches) {
-    allMatches = matches || [];
-    matchesPage = 0;
-    renderMatchesPage();
-}
+    recentMatches = Array.isArray(matches) ? matches : [];
+    if (resetPage) {
+        recentMatchesPage = 0;
+    }
 
-function renderMatchesPage() {
-    const tbody = document.getElementById('matchesTableBody');
-    const tfoot = document.getElementById('matchesTableFoot');
-    if (!tbody || !tfoot) return;
-    tbody.innerHTML = '';
-    tfoot.innerHTML = '';
+    const pagination = document.getElementById('recentMatchesPagination');
+    if (pagination) {
+        pagination.remove();
+    }
 
-    if (!allMatches.length) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">No match data available</td></tr>';
-        renderMatchesPagination();
+    if (!recentMatches.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="table-empty">No recent matches available.</td></tr>';
         return;
     }
 
-    const start = matchesPage * MATCHES_PAGE_SIZE;
-    const pageItems = allMatches.slice(start, start + MATCHES_PAGE_SIZE);
+    const startIndex = recentMatchesPage * RECENT_MATCHES_PAGE_SIZE;
+    const pageMatches = recentMatches.slice(startIndex, startIndex + RECENT_MATCHES_PAGE_SIZE);
 
-    pageItems.forEach(match => {
-        const row = document.createElement('tr');
+    tbody.innerHTML = pageMatches.map(match => {
+        const date = match.date ? new Date(match.date) : null;
         const teamScore = Number(match.team_score);
         const opponentScore = Number(match.opponent_score);
-        if (!Number.isNaN(teamScore) && !Number.isNaN(opponentScore)) {
-            if (teamScore > opponentScore) {
-                row.classList.add('match-win');
-            } else if (teamScore < opponentScore) {
-                row.classList.add('match-loss');
-            }
-        }
-        let date = new Date(match.date);
-        row.innerHTML = `
-            <td class="icon-column"><img src="../${match.tournament_icon}" class="match-icon"></td>
-            <td>${match.tournament}</td>
-            <td><time datetime="${date.toISOString()}">${date.toDateString()}</time></td>
-            <td class="icon-column"><a href="../teams/${match.opponent}"><img src="${match.opponent_icon ? '../' + match.opponent_icon : ''}" class="match-icon"></a></td>
-            <td>${match.opponent}</td>
-            <td>${match.team_score}:${match.opponent_score}</td>
-            <td><a href="${match.ref_link}">🔗</a></td>
+        const matchTeamName = match.team_name || currentPlayerTeam.name || 'Team';
+        const matchTeamIcon = match.team_icon || currentPlayerTeam.icon || '';
+        const scoreClass = Number.isFinite(teamScore) && Number.isFinite(opponentScore)
+            ? (teamScore > opponentScore ? 'score-badge is-win' : teamScore < opponentScore ? 'score-badge is-loss' : 'score-badge')
+            : 'score-badge';
+        const matchup = `
+            <div class="matchup-cell">
+                <a href="/teams/${encodeURIComponent(matchTeamName)}" class="team-pill">
+                    ${matchTeamIcon ? `<img src="${resolveAssetPath(matchTeamIcon)}" alt="${matchTeamName}" class="team-icon">` : ''}
+                    <span>${matchTeamName}</span>
+                </a>
+                <span>vs</span>
+                <a href="/teams/${encodeURIComponent(match.opponent || '')}" class="team-pill">
+                    ${match.opponent_icon ? `<img src="${resolveAssetPath(match.opponent_icon)}" alt="${match.opponent || 'Opponent'}" class="team-icon">` : ''}
+                    <span>${match.opponent || ''}</span>
+                </a>
+            </div>
         `;
-        tbody.appendChild(row);
-    });
 
-    renderMatchesPagination();
+        return `
+            <tr>
+                <td data-label="Tournament">
+                    <span class="team-pill">
+                        ${match.tournament_icon ? `<img src="${resolveAssetPath(match.tournament_icon)}" alt="${match.tournament || ''}" class="team-icon">` : ''}
+                        <span>${match.tournament || 'Unknown'}</span>
+                    </span>
+                </td>
+                <td data-label="Date">${date ? date.toDateString() : ''}</td>
+                <td data-label="Matchup">${matchup}</td>
+                <td data-label="Score"><span class="${scoreClass}">${match.team_score || 0} - ${match.opponent_score || 0}</span></td>
+                <td data-label="Link">
+                    ${match.ref_link ? `<a class="link-pill" href="${match.ref_link}" target="_blank" rel="noreferrer">↗</a>` : '<span class="table-empty">-</span>'}
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    renderRecentMatchesPagination();
 }
 
-function renderMatchesPagination() {
-    const existing = document.getElementById('matchesPagination');
-    if (existing) existing.remove();
+function renderRecentMatchesPagination() {
+    const existing = document.getElementById('recentMatchesPagination');
+    if (existing) {
+        existing.remove();
+    }
 
-    const totalPages = Math.ceil(allMatches.length / MATCHES_PAGE_SIZE);
-    if (totalPages <= 1) return;
+    const totalPages = Math.ceil(recentMatches.length / RECENT_MATCHES_PAGE_SIZE);
+    if (totalPages <= 1) {
+        return;
+    }
 
     const container = document.createElement('div');
-    container.id = 'matchesPagination';
+    container.id = 'recentMatchesPagination';
     container.className = 'pagination';
 
-    const prevBtn = document.createElement('button');
-    prevBtn.textContent = '\u2039';
-    prevBtn.className = 'page-button';
-    prevBtn.disabled = matchesPage === 0;
-    prevBtn.addEventListener('click', () => { matchesPage--; renderMatchesPage(); });
+    const prevButton = document.createElement('button');
+    prevButton.type = 'button';
+    prevButton.className = 'page-button';
+    prevButton.textContent = '‹';
+    prevButton.disabled = recentMatchesPage === 0;
+    prevButton.addEventListener('click', () => {
+        if (recentMatchesPage > 0) {
+            recentMatchesPage -= 1;
+            renderRecentMatches(recentMatches, false);
+        }
+    });
 
-    const info = document.createElement('span');
-    info.className = 'page-info';
-    info.textContent = `${matchesPage + 1} / ${totalPages}`;
+    const pageInfo = document.createElement('span');
+    pageInfo.className = 'page-info';
+    pageInfo.textContent = `${recentMatchesPage + 1} / ${totalPages}`;
 
-    const nextBtn = document.createElement('button');
-    nextBtn.textContent = '\u203a';
-    nextBtn.className = 'page-button';
-    nextBtn.disabled = matchesPage >= totalPages - 1;
-    nextBtn.addEventListener('click', () => { matchesPage++; renderMatchesPage(); });
+    const nextButton = document.createElement('button');
+    nextButton.type = 'button';
+    nextButton.className = 'page-button';
+    nextButton.textContent = '›';
+    nextButton.disabled = recentMatchesPage >= totalPages - 1;
+    nextButton.addEventListener('click', () => {
+        if (recentMatchesPage < totalPages - 1) {
+            recentMatchesPage += 1;
+            renderRecentMatches(recentMatches, false);
+        }
+    });
 
-    container.appendChild(prevBtn);
-    container.appendChild(info);
-    container.appendChild(nextBtn);
+    container.appendChild(prevButton);
+    container.appendChild(pageInfo);
+    container.appendChild(nextButton);
 
-    const table = document.getElementById('matchesTable');
-    table.insertAdjacentElement('afterend', container);
+    const tableShell = document.querySelector('.recent-section .table-shell');
+    if (tableShell) {
+        tableShell.insertAdjacentElement('afterend', container);
+    }
 }
 
 
@@ -372,7 +475,7 @@ function renderStatChart(statName) {
     if (!statChartData || statChartData.length === 0) return;
     const ctx = document.getElementById('statsChart');
     if (!ctx) return;
-    
+
     // Calculate cumulative totals and running averages
     const labels = [];
     const Data = [];
@@ -584,6 +687,7 @@ function initializeMapChart(maps) {
 document.addEventListener('DOMContentLoaded', () => {
     loadTournamentOptions();
     setFilterPanelOpen(false);
+    setMapSectionCollapsed(false);
 
     document.addEventListener('click', event => {
         const toggleButton = event.target.closest('#filterToggle');
@@ -602,6 +706,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!nextView || nextView === currentMapView) return;
         currentMapView = nextView;
         renderMapResults();
+    });
+
+    document.addEventListener('click', event => {
+        const toggle = event.target.closest('[data-map-collapse-toggle]');
+        if (!toggle) return;
+        toggleMapSection(event);
     });
 
     loadPlayerData();

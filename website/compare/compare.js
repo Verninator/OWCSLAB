@@ -10,6 +10,8 @@ let selectedTeamAId = '';
 let selectedTeamBId = '';
 let currentMapView = 'map';
 let currentBanView = 'hero';
+let mapSectionCollapsed = false;
+let heroSectionCollapsed = false;
 let lastComparisonData = null;
 let tournamentOptions = [];
 let selectedTournamentIds = [];
@@ -186,6 +188,42 @@ function buildTeamIconPath(icon) {
     return icon.startsWith('/') ? icon : `/${icon}`;
 }
 
+function buildAssetPath(path) {
+  if (!path) return '';
+  return path.startsWith('/') ? path : `/${path}`;
+}
+
+function normalizeHexColor(color) {
+  const value = String(color || '').trim();
+  if (!value.startsWith('#')) return '';
+
+  const hex = value.slice(1);
+  if (hex.length === 3 && /^[0-9a-fA-F]{3}$/.test(hex)) {
+    return `#${hex.split('').map(ch => ch + ch).join('')}`;
+  }
+
+  if (hex.length === 6 && /^[0-9a-fA-F]{6}$/.test(hex)) {
+    return `#${hex}`;
+  }
+
+  return '';
+}
+
+function getReadableTextColor(backgroundColor) {
+  const normalized = normalizeHexColor(backgroundColor);
+  if (!normalized) {
+    return '#ffffff';
+  }
+
+  const hex = normalized.slice(1);
+  const red = parseInt(hex.slice(0, 2), 16);
+  const green = parseInt(hex.slice(2, 4), 16);
+  const blue = parseInt(hex.slice(4, 6), 16);
+  const brightness = (red * 299 + green * 587 + blue * 114) / 1000;
+
+  return brightness >= 160 ? '#0a0e27' : '#f5f9ff';
+}
+
 function buildTeamIcon(team, className = 'team-badge-icon') {
   return `<img src="${buildTeamIconPath(team.icon)}" alt="${team.name}" title="${team.name}" class="${className}">`;
 }
@@ -314,17 +352,22 @@ function groupMapsByMode(maps) {
 function buildMapComparisonSection(data, teamAColor, teamBColor) {
   const items = currentMapView === 'mode' ? groupMapsByMode(data.maps) : data.maps;
   const mapRows = buildMapRows(items, data, teamAColor, teamBColor);
+  const mapCollapseLabel = mapSectionCollapsed ? 'Expand' : 'Collapse';
+  const mapExpanded = String(!mapSectionCollapsed);
 
   return `
-    <section class="compare-section">
+    <section class="compare-section compare-map-section${mapSectionCollapsed ? ' is-collapsed' : ''}">
       <div class="compare-section-header">
         <h2>Map Results</h2>
-        <div class="compare-view-toggle" role="group" aria-label="Map results grouping">
-          <button type="button" class="compare-view-button ${currentMapView === 'map' ? 'is-active' : ''}" data-map-view="map">Map</button>
-          <button type="button" class="compare-view-button ${currentMapView === 'mode' ? 'is-active' : ''}" data-map-view="mode">Mode</button>
+        <div class="compare-section-actions">
+          <div class="compare-view-toggle" role="group" aria-label="Map results grouping">
+            <button type="button" class="compare-view-button ${currentMapView === 'map' ? 'is-active' : ''}" data-map-view="map">Map</button>
+            <button type="button" class="compare-view-button ${currentMapView === 'mode' ? 'is-active' : ''}" data-map-view="mode">Mode</button>
+          </div>
+          <button type="button" class="graph-collapse-toggle" data-map-collapse-toggle aria-expanded="${mapExpanded}" aria-controls="compareMapChart">${mapCollapseLabel}</button>
         </div>
       </div>
-      <div class="ban-chart map-chart">
+      <div class="ban-chart map-chart" id="compareMapChart">
         ${mapRows}
       </div>
     </section>
@@ -397,9 +440,7 @@ function buildCompareBanRows(items, heroNames, teamAColor, teamBColor) {
 function renderComparison(data) {
   lastComparisonData = data;
   const teamASummary = buildStatsCard(buildTeamTitle(data.teamA, 'Totals'), data.teamA.totals);
-  const teamAAverages = buildStatsCard(buildTeamTitle(data.teamA, 'Average'), data.teamA.averages);
   const teamBSummary = buildStatsCard(buildTeamTitle(data.teamB, 'Totals'), data.teamB.totals);
-  const teamBAverages = buildStatsCard(buildTeamTitle(data.teamB, 'Average'), data.teamB.averages);
   const teamAColor = data.teamA.colour || '#2ecc71';
   const teamBColor = data.teamB.colour || '#72f194';
   const teamAIcon = buildTeamIcon(data.teamA, 'head-card-icon');
@@ -474,47 +515,88 @@ function renderComparison(data) {
     .sort((a, b) => (b.teamA + b.teamB) - (a.teamA + a.teamB));
   const banItems = currentBanView === 'role' ? groupCompareBansByRole(heroItems) : heroItems;
   const banRows = buildCompareBanRows(banItems, heroNames, teamAColor, teamBColor);
+  const heroCollapseLabel = heroSectionCollapsed ? 'Expand' : 'Collapse';
+  const heroExpanded = String(!heroSectionCollapsed);
 
   const bansSection = `
-    <section class="compare-section compare-bans">
+    <section class="compare-section compare-bans compare-heroes-section${heroSectionCollapsed ? ' is-collapsed' : ''}">
       <div class="compare-section-header">
         <h2>Ban Comparison</h2>
-        <div class="compare-view-toggle" role="group" aria-label="Ban results grouping">
-          <button type="button" class="compare-view-button ${currentBanView === 'hero' ? 'is-active' : ''}" data-ban-view="hero">Hero</button>
-          <button type="button" class="compare-view-button ${currentBanView === 'role' ? 'is-active' : ''}" data-ban-view="role">Role</button>
+        <div class="compare-section-actions">
+          <div class="compare-view-toggle" role="group" aria-label="Ban results grouping">
+            <button type="button" class="compare-view-button ${currentBanView === 'hero' ? 'is-active' : ''}" data-ban-view="hero">Hero</button>
+            <button type="button" class="compare-view-button ${currentBanView === 'role' ? 'is-active' : ''}" data-ban-view="role">Role</button>
+          </div>
+          <button type="button" class="graph-collapse-toggle" data-ban-collapse-toggle aria-expanded="${heroExpanded}" aria-controls="compareBanChart">${heroCollapseLabel}</button>
         </div>
       </div>
-      <div class="ban-chart">
+      <div class="ban-chart" id="compareBanChart">
         ${banRows}
       </div>
     </section>
   `;
 
-  const matchRows = data.matches.map(match => `
-    <tr>
-      <td>${new Date(match.date).toLocaleDateString()}</td>
-      <td>${match.tournament || 'N/A'}</td>
-      <td>${buildTeamIcon(match.teamA, 'table-team-icon')}</td>
-      <td>${match.teamA.score}:${match.teamB.score}</td>
-      <td>${buildTeamIcon(match.teamB, 'table-team-icon')}</td>
-      <td>${buildWinnerDisplay(match)}</td>
-    </tr>
-  `).join('');
+  const matchRows = (data.matches || []).map(match => {
+    const teamAScore = Number(match.teamA.score) || 0;
+    const teamBScore = Number(match.teamB.score) || 0;
+    const winningColor = teamAScore > teamBScore
+      ? teamAColor
+      : teamBScore > teamAScore
+        ? teamBColor
+        : '';
+    const scoreBackground = winningColor || '#2a2f4a';
+    const scoreTextColor = getReadableTextColor(scoreBackground);
+
+    return `
+      <tr>
+        <td data-label="Tournament">
+          <span class="team-pill">
+            ${match.tournament_icon ? `<img src="${buildAssetPath(match.tournament_icon)}" alt="${match.tournament || ''}" class="team-icon">` : ''}
+            <span>${match.tournament || 'Unknown'}</span>
+          </span>
+        </td>
+        <td data-label="Date">${match.date ? new Date(match.date).toDateString() : ''}</td>
+        <td data-label="Matchup">
+          <div class="matchup-cell">
+            <a href="/teams/${encodeURIComponent(match.teamA.name || '')}" class="team-pill">
+              ${match.teamA.icon ? `<img src="${buildTeamIconPath(match.teamA.icon)}" alt="${match.teamA.name || ''}" class="team-icon">` : ''}
+              <span>${match.teamA.name || ''}</span>
+            </a>
+            <span>vs</span>
+            <a href="/teams/${encodeURIComponent(match.teamB.name || '')}" class="team-pill">
+              ${match.teamB.icon ? `<img src="${buildTeamIconPath(match.teamB.icon)}" alt="${match.teamB.name || ''}" class="team-icon">` : ''}
+              <span>${match.teamB.name || ''}</span>
+            </a>
+          </div>
+        </td>
+        <td data-label="Score"><span class="score-badge" style="background: ${scoreBackground}; color: ${scoreTextColor};">${teamAScore} - ${teamBScore}</span></td>
+        <td data-label="Link">${match.ref_link ? `<a class="link-pill" href="${match.ref_link}" target="_blank" rel="noreferrer">↗</a>` : '<span class="table-empty">-</span>'}</td>
+      </tr>
+    `;
+  }).join('');
 
   const matchesSection = `
-    <section class="compare-section">
-      <h2>Match History</h2>
-      <div class="table-wrap">
-        <table class="compare-table">
+    <section class="compare-section recent-section">
+      <div class="match-section-header">
+        <div>
+          <h2>Recent Matches</h2>
+        </div>
+      </div>
+
+      <div class="table-shell">
+        <table class="matches-table">
           <thead>
             <tr>
-              <th>Date</th>
               <th>Tournament</th>
-              <th colspan=3>Score</th>
-              <th>Winner</th>
+              <th>Date</th>
+              <th>Matchup</th>
+              <th>Score</th>
+              <th>Link</th>
             </tr>
           </thead>
-          <tbody>${matchRows}</tbody>
+          <tbody>
+            ${matchRows || '<tr><td colspan="5" class="table-empty">No recent matches available.</td></tr>'}
+          </tbody>
         </table>
       </div>
     </section>
@@ -523,9 +605,7 @@ function renderComparison(data) {
   compareResults.innerHTML = `
     <div class="compare-grid">
       ${teamASummary}
-      ${teamAAverages}
       ${teamBSummary}
-      ${teamBAverages}
     </div>
     ${headToHead}
     ${mapComparison}
@@ -564,6 +644,8 @@ async function compareTeams() {
   try {
     currentMapView = 'map';
     currentBanView = 'hero';
+    mapSectionCollapsed = false;
+    heroSectionCollapsed = false;
     const query = buildTournamentQuery();
     const response = await fetch(`/api/compare?teamA=${teamA}&teamB=${teamB}&${query}`);
     if (!response.ok) {
@@ -618,5 +700,17 @@ document.addEventListener('click', event => {
       currentBanView = nextView;
       renderComparison(lastComparisonData);
     }
+  }
+
+  const mapCollapseButton = event.target.closest('[data-map-collapse-toggle]');
+  if (mapCollapseButton && lastComparisonData) {
+    mapSectionCollapsed = !mapSectionCollapsed;
+    renderComparison(lastComparisonData);
+  }
+
+  const banCollapseButton = event.target.closest('[data-ban-collapse-toggle]');
+  if (banCollapseButton && lastComparisonData) {
+    heroSectionCollapsed = !heroSectionCollapsed;
+    renderComparison(lastComparisonData);
   }
 });

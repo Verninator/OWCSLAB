@@ -4,11 +4,17 @@ let mapChart = null;
 let banChart = null;
 let currentMapView = 'map';
 let currentBanView = 'hero';
+let mapSectionCollapsed = false;
+let banSectionCollapsed = false;
 let teamMapData = [];
 let teamBanData = [];
 let tournamentOptions = [];
 let selectedTournamentIds = [];
 let tournamentMode = 'include';
+let currentTeam = { name: '', icon: '' };
+let recentMatches = [];
+let recentMatchesPage = 0;
+const RECENT_MATCHES_PAGE_SIZE = 10;
 
 function formatCompactNumber(number) {
   if (number === null || number === undefined) return 0;
@@ -16,6 +22,15 @@ function formatCompactNumber(number) {
   if (number < 1000000) return (number / 1000).toFixed(1) + 'K';
   if (number < 1000000000) return (number / 1000000).toFixed(1) + 'M';
   return number;
+}
+
+function resolveAssetPath(value) {
+  const path = String(value || '').trim();
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('/')) {
+    return path;
+  }
+  return `/${path}`;
 }
 
 function buildTournamentQuery() {
@@ -129,6 +144,42 @@ function toggleFilterPanel(event) {
   setFilterPanelOpen(!panel.classList.contains('is-open'));
 }
 
+function setMapSectionCollapsed(isCollapsed) {
+  const section = document.querySelector('.map-graph-section');
+  const toggle = document.querySelector('[data-map-collapse-toggle]');
+  if (!section || !toggle) return;
+
+  mapSectionCollapsed = isCollapsed;
+  section.classList.toggle('is-collapsed', isCollapsed);
+  toggle.setAttribute('aria-expanded', String(!isCollapsed));
+  toggle.textContent = isCollapsed ? 'Expand' : 'Collapse';
+}
+
+function toggleMapSection(event) {
+  if (event) {
+    event.stopPropagation();
+  }
+  setMapSectionCollapsed(!mapSectionCollapsed);
+}
+
+function setBanSectionCollapsed(isCollapsed) {
+  const section = document.querySelector('.ban-graph-section');
+  const toggle = document.querySelector('[data-ban-collapse-toggle]');
+  if (!section || !toggle) return;
+
+  banSectionCollapsed = isCollapsed;
+  section.classList.toggle('is-collapsed', isCollapsed);
+  toggle.setAttribute('aria-expanded', String(!isCollapsed));
+  toggle.textContent = isCollapsed ? 'Expand' : 'Collapse';
+}
+
+function toggleBanSection(event) {
+  if (event) {
+    event.stopPropagation();
+  }
+  setBanSectionCollapsed(!banSectionCollapsed);
+}
+
 async function loadTeamData() {
   // Determine team identifier from path (`/team/:name` or `/teams/:name`) or `?name=`/`?id=` query
   const pathParts = window.location.pathname.split('/').filter(Boolean);
@@ -166,8 +217,13 @@ async function loadTeamData() {
     if (teamLogoEl && data.team_details.icon) teamLogoEl.src = '../' + data.team_details.icon;
   }
 
+  currentTeam = {
+    name: (data.team_details && data.team_details.name) || '',
+    icon: (data.team_details && data.team_details.icon) || ''
+  };
+
   populateRoster(data.roster || [], data.team_details || {});
-  populateMatchesTable(data.matches || []);
+  renderRecentMatches(data.matches || [], true);
   populateTournaments(data.tournaments || []);
   initializeMapChart(data.maps || []);
   initializeBanChart(data.bans);
@@ -363,92 +419,122 @@ function populateRoster(roster, teamDetails = {}) {
   `;
 }
 
-let allMatches = [];
-let matchesPage = 0;
-const MATCHES_PAGE_SIZE = 10;
+function renderRecentMatches(matches, resetPage = false) {
+  const tbody = document.getElementById('recentMatchesBody');
+  if (!tbody) return;
 
-function populateMatchesTable(matches) {
-  allMatches = matches || [];
-  matchesPage = 0;
-  renderMatchesPage();
-}
+  recentMatches = Array.isArray(matches) ? matches : [];
+  if (resetPage) {
+    recentMatchesPage = 0;
+  }
 
-function renderMatchesPage() {
-  const tbody = document.getElementById('matchesTableBody');
-  const tfoot = document.getElementById('matchesTableFoot');
-  if (!tbody || !tfoot) return;
-  tbody.innerHTML = '';
-  tfoot.innerHTML = '';
+  const pagination = document.getElementById('recentMatchesPagination');
+  if (pagination) {
+    pagination.remove();
+  }
 
-  if (!allMatches.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">No match data available</td></tr>';
-    renderMatchesPagination();
+  if (!recentMatches.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="recent-table-empty">No recent matches available.</td></tr>';
     return;
   }
 
-  const start = matchesPage * MATCHES_PAGE_SIZE;
-  const pageItems = allMatches.slice(start, start + MATCHES_PAGE_SIZE);
+  const startIndex = recentMatchesPage * RECENT_MATCHES_PAGE_SIZE;
+  const pageMatches = recentMatches.slice(startIndex, startIndex + RECENT_MATCHES_PAGE_SIZE);
 
-  pageItems.forEach(match => {
-    const row = document.createElement('tr');
+  tbody.innerHTML = pageMatches.map(match => {
+    const date = match.date ? new Date(match.date) : null;
     const teamScore = Number(match.team_score);
     const opponentScore = Number(match.opponent_score);
-    if (!Number.isNaN(teamScore) && !Number.isNaN(opponentScore)) {
-      if (teamScore > opponentScore) {
-        row.classList.add('match-win');
-      } else if (teamScore < opponentScore) {
-        row.classList.add('match-loss');
-      }
-    }
-    let date = match.date ? new Date(match.date) : null;
-    row.innerHTML = `
-      <td class="icon-column"><img src="${match.tournament_icon ? '../' + match.tournament_icon : ''}" class="match-icon"></td>
-      <td>${match.tournament || ''}</td>
-      <td><time datetime="${match.date || ''}">${date ? date.toDateString() : ''}</time></td>
-      <td class="icon-column"><a href="./${match.opponent}"><img src="${match.opponent_icon ? '../' + match.opponent_icon : ''}" class="match-icon"></a></td>
-      <td>${match.opponent || ''}</td>
-      <td>${match.team_score || 0}:${match.opponent_score || 0}</td>
-      <td>${match.ref_link ? ('<a href="' + match.ref_link + '">🔗</a>') : ''}</td>
-    `;
-    tbody.appendChild(row);
-  });
+    const scoreClass = Number.isFinite(teamScore) && Number.isFinite(opponentScore)
+      ? (teamScore > opponentScore ? 'recent-score-badge is-win' : teamScore < opponentScore ? 'recent-score-badge is-loss' : 'recent-score-badge')
+      : 'recent-score-badge';
 
-  renderMatchesPagination();
+    const matchup = `
+      <div class="recent-matchup-cell">
+        <a href="/teams/${encodeURIComponent(currentTeam.name || '')}" class="recent-team-pill">
+          ${currentTeam.icon ? `<img src="${resolveAssetPath(currentTeam.icon)}" alt="${currentTeam.name}" class="recent-team-icon">` : ''}
+          <span>${currentTeam.name || 'Team'}</span>
+        </a>
+        <span>vs</span>
+        <a href="/teams/${encodeURIComponent(match.opponent || '')}" class="recent-team-pill">
+          ${match.opponent_icon ? `<img src="${resolveAssetPath(match.opponent_icon)}" alt="${match.opponent || 'Opponent'}" class="recent-team-icon">` : ''}
+          <span>${match.opponent || ''}</span>
+        </a>
+      </div>
+    `;
+
+    return `
+      <tr>
+        <td data-label="Tournament">
+          <span class="recent-team-pill">
+            ${match.tournament_icon ? `<img src="${resolveAssetPath(match.tournament_icon)}" alt="${match.tournament || ''}" class="recent-team-icon">` : ''}
+            <span>${match.tournament || 'Unknown'}</span>
+          </span>
+        </td>
+        <td data-label="Date">${date ? date.toDateString() : ''}</td>
+        <td data-label="Matchup">${matchup}</td>
+        <td data-label="Score"><span class="${scoreClass}">${match.team_score || 0} - ${match.opponent_score || 0}</span></td>
+        <td data-label="Link">
+          ${match.ref_link ? `<a class="recent-link-pill" href="${match.ref_link}" target="_blank" rel="noreferrer">↗</a>` : '<span class="recent-table-empty">-</span>'}
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  renderRecentMatchesPagination();
 }
 
-function renderMatchesPagination() {
-  const existing = document.getElementById('matchesPagination');
-  if (existing) existing.remove();
+function renderRecentMatchesPagination() {
+  const existing = document.getElementById('recentMatchesPagination');
+  if (existing) {
+    existing.remove();
+  }
 
-  const totalPages = Math.ceil(allMatches.length / MATCHES_PAGE_SIZE);
-  if (totalPages <= 1) return;
+  const totalPages = Math.ceil(recentMatches.length / RECENT_MATCHES_PAGE_SIZE);
+  if (totalPages <= 1) {
+    return;
+  }
 
   const container = document.createElement('div');
-  container.id = 'matchesPagination';
-  container.className = 'table-pagination';
+  container.id = 'recentMatchesPagination';
+  container.className = 'recent-pagination';
 
-  const prevBtn = document.createElement('button');
-  prevBtn.textContent = '\u2039';
-  prevBtn.className = 'page-btn';
-  prevBtn.disabled = matchesPage === 0;
-  prevBtn.addEventListener('click', () => { matchesPage--; renderMatchesPage(); });
+  const prevButton = document.createElement('button');
+  prevButton.type = 'button';
+  prevButton.className = 'recent-page-button';
+  prevButton.textContent = '‹';
+  prevButton.disabled = recentMatchesPage === 0;
+  prevButton.addEventListener('click', () => {
+    if (recentMatchesPage > 0) {
+      recentMatchesPage -= 1;
+      renderRecentMatches(recentMatches, false);
+    }
+  });
 
-  const info = document.createElement('span');
-  info.className = 'page-info';
-  info.textContent = `${matchesPage + 1} / ${totalPages}`;
+  const pageInfo = document.createElement('span');
+  pageInfo.className = 'recent-page-info';
+  pageInfo.textContent = `${recentMatchesPage + 1} / ${totalPages}`;
 
-  const nextBtn = document.createElement('button');
-  nextBtn.textContent = '\u203a';
-  nextBtn.className = 'page-btn';
-  nextBtn.disabled = matchesPage >= totalPages - 1;
-  nextBtn.addEventListener('click', () => { matchesPage++; renderMatchesPage(); });
+  const nextButton = document.createElement('button');
+  nextButton.type = 'button';
+  nextButton.className = 'recent-page-button';
+  nextButton.textContent = '›';
+  nextButton.disabled = recentMatchesPage >= totalPages - 1;
+  nextButton.addEventListener('click', () => {
+    if (recentMatchesPage < totalPages - 1) {
+      recentMatchesPage += 1;
+      renderRecentMatches(recentMatches, false);
+    }
+  });
 
-  container.appendChild(prevBtn);
-  container.appendChild(info);
-  container.appendChild(nextBtn);
+  container.appendChild(prevButton);
+  container.appendChild(pageInfo);
+  container.appendChild(nextButton);
 
-  const table = document.getElementById('matchesTable');
-  table.insertAdjacentElement('afterend', container);
+  const tableShell = document.querySelector('.recent-section .table-shell');
+  if (tableShell) {
+    tableShell.insertAdjacentElement('afterend', container);
+  }
 }
 
 function getWinRate(map) {
@@ -654,6 +740,8 @@ function setupChartSelector() {
 document.addEventListener('DOMContentLoaded', () => {
   loadTournamentOptions();
   setFilterPanelOpen(false);
+  setMapSectionCollapsed(false);
+  setBanSectionCollapsed(false);
 
   document.addEventListener('click', event => {
     const toggleButton = event.target.closest('#filterToggle');
@@ -675,12 +763,24 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.addEventListener('click', event => {
+    const toggle = event.target.closest('[data-map-collapse-toggle]');
+    if (!toggle) return;
+    toggleMapSection(event);
+  });
+
+  document.addEventListener('click', event => {
     const toggle = event.target.closest('[data-ban-view]');
     if (!toggle) return;
     const nextView = toggle.dataset.banView;
     if (!nextView || nextView === currentBanView) return;
     currentBanView = nextView;
     renderBanResults();
+  });
+
+  document.addEventListener('click', event => {
+    const toggle = event.target.closest('[data-ban-collapse-toggle]');
+    if (!toggle) return;
+    toggleBanSection(event);
   });
 
   loadTeamData();

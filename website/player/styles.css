@@ -207,6 +207,177 @@ a:hover {
     overflow-x: auto;
 }
 
+
+.section-header h2 {
+    color: #00ff41;
+    font-size: 1.25rem;
+    margin: 0;
+}
+
+.section-meta {
+    color: #c7d2ff;
+    font-size: 0.95rem;
+}
+
+
+.recent-section {
+    margin-top: 26px;
+    grid-area: matches;
+}
+
+.match-section-header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+.match-section-header h2 {
+    font-size: clamp(1.6rem, 2.5vw, 2.2rem);
+    letter-spacing: -0.03em;
+    color: #00ff41;
+}
+
+.table-shell {
+    overflow: hidden;
+    background: #1a1f3a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(12px);
+}
+
+.matches-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.matches-table thead {
+    background: #2a2f4a;
+    border-bottom: 2px solid #84af8f;
+    text-align: left;
+}
+
+.matches-table th {
+    padding: 12px;
+    text-align: left;
+    color: #ffffff;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85em;
+    letter-spacing: 0.5px;
+}
+
+.matches-table td {
+    text-align: left;
+    padding: 12px;
+    color: #ffffff;
+    border-bottom: 1px solid #2a2f4a;
+    font-size: 0.95em;
+}
+
+.matches-table tbody tr:hover {
+    background: #2a2f4a;
+}
+
+.matches-table tbody tr:hover .team-pill {
+    background: #2a2f4a;
+}
+
+.matches-table tfoot {
+    border-top: 2px solid #84af8f;
+    background: #2a2f4a;
+    font-weight: 600;
+}
+
+.matches-table tfoot td {
+    padding: 12px;
+    color: #ffffff;
+    border-bottom: none;
+}
+
+.matchup-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.team-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.team-pill:hover {
+    background: rgba(46, 204, 113, 0.12);
+}
+
+.team-icon {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    object-position: center;
+    flex-shrink: 0;
+}
+
+.score-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 84px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(46, 204, 113, 0.12);
+    color: #dffdf0;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+}
+
+.score-badge.is-win {
+    background: rgba(46, 204, 113, 0.16);
+    color: #7dffb0;
+}
+
+.score-badge.is-loss {
+    background: rgba(231, 76, 60, 0.18);
+    color: #ffb1aa;
+}
+
+.link-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    min-height: 38px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.link-pill:hover {
+    background: rgba(77, 195, 255, 0.14);
+}
+
+.table-empty {
+    text-align: center;
+    color: #a9b8d4;
+    padding: 30px 18px;
+}
+
+.match-icon {
+    max-height: 30px;
+    max-width: 30px;
+    border-radius: 0;
+    object-fit: cover;
+}
+
+
 .stats-table {
     width: 100%;
     min-width: 940px;
@@ -281,59 +452,13 @@ a:hover {
     font-size: 0.8em;
 }
 
-.pagination {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 16px;
-}
-
-.section-header h2 {
+.player-link {
     color: #00ff41;
-    font-size: 1.25rem;
-    margin: 0;
+    text-decoration: none;
 }
 
-.section-meta {
-    color: #c7d2ff;
-    font-size: 0.95rem;
-}
-
-.stats-table {
-    width: 100%;
-    border-collapse: collapse;
-    overflow: hidden;
-    background: #12172d;
-}
-
-.stats-table th,
-.stats-table td {
-    padding: 14px 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    color: #e5e7ff;
-    text-align: left;
-}
-
-.stats-table th {
-    cursor: pointer;
-    position: relative;
-    user-select: none;
-    background: rgba(255, 255, 255, 0.05);
-    white-space: nowrap;
-}
-
-.stats-table tbody tr:hover {
-    background: rgba(255, 255, 255, 0.04);
-}
-
-.stats-table tbody tr:last-child td {
-    border-bottom: none;
-}
-
-.sort-arrow {
-    color: #2ecc71;
-    font-size: 0.8em;
+.player-link:hover {
+    text-decoration: underline;
 }
 
 .pagination {
@@ -360,15 +485,6 @@ a:hover {
 
 .page-info {
     color: #c7d2ff;
-}
-
-.player-link {
-    color: #00ff41;
-    text-decoration: none;
-}
-
-.player-link:hover {
-    text-decoration: underline;
 }
 
 .profile-header {
@@ -582,100 +698,6 @@ a:hover {
     font-weight: bold;
 }
 
-.matches-section {
-    background: #1a1f3a;
-    border-radius: 0;
-    padding: 30px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    margin-top: 30px;
-    border: none;
-    grid-area: matches;
-}
-
-.matches-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.matches-header h2 {
-    color: #00ff41;
-    font-size: 1.5em;
-    margin: 0;
-}
-
-.matches-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-}
-
-.matches-table thead {
-    background: #2a2f4a;
-    border-bottom: 2px solid #84af8f;
-    text-align: left;
-}
-
-.matches-table th {
-    padding: 12px;
-    text-align: left;
-    color: #ffffff;
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.85em;
-    letter-spacing: 0.5px;
-}
-
-.icon-column {
-    width: 50px;
-    text-align: center !important;
-}
-
-.matches-table td {
-    text-align: left;
-    padding: 12px;
-    color: #ffffff;
-    border-bottom: 1px solid #2a2f4a;
-    font-size: 0.95em;
-}
-
-.match-icon {
-            max-height: 30px;
-            max-width: 30px;
-            border-radius: 0;
-            object-fit: cover;
-        }
-
-.matches-table tbody tr.match-win {
-    background: rgba(46, 204, 113, 0.22);
-    border-left: 6px solid #2ecc71;
-}
-
-.matches-table tbody tr.match-loss {
-    background: rgba(231, 76, 60, 0.22);
-    border-left: 6px solid #e74c3c;
-}
-
-.matches-table tbody tr:hover {
-    background: #2a2f4a;
-}
-
-.matches-table tbody tr:hover .match-icon {
-    background: #2a2f4a;
-}
-
-.matches-table tfoot {
-    border-top: 2px solid #84af8f;
-    background: #2a2f4a;
-    font-weight: 600;
-}
-
-.matches-table tfoot td {
-    padding: 12px;
-    color: #ffffff;
-    border-bottom: none;
-}
 
 .stats-graph-section {
     background: #1a1f3a;
@@ -845,6 +867,8 @@ a:hover {
     display: block;
 }
 
+/* map collapse styles remain from earlier changes */
+
 .map-graph-section {
     background: #1a1f3a;
     border-radius: 0;
@@ -854,6 +878,14 @@ a:hover {
     border: none;
     gap: 20px;
     grid-area: maps;
+}
+
+.map-graph-section.is-collapsed .map-results-chart {
+    display: none;
+}
+
+.map-graph-section.is-collapsed .graph-header {
+    margin-bottom: 0;
 }
 
 .map-results-chart {
@@ -1072,6 +1104,20 @@ a:hover {
     accent-color: #00ff41;
 }
 
+.graph-collapse-toggle {
+    background: #14182d;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.graph-collapse-toggle:hover {
+    background: #1f2539;
+}
+
 @media (max-width: 768px) {
     .topbar {
         flex-direction: column;
@@ -1155,3 +1201,4 @@ a:hover {
         height: 250px;
     }
 }
+

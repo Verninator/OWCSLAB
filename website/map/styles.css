@@ -413,6 +413,44 @@ a:hover {
     color: #e5e7ff;
 }
 
+.team-table-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.team-page-button {
+    border: 1px solid rgba(46, 204, 113, 0.4);
+    background: rgba(46, 204, 113, 0.12);
+    color: #72f194;
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    font-size: 1.35rem;
+    cursor: pointer;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.team-page-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    background: rgba(46, 204, 113, 0.2);
+}
+
+.team-page-button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.team-page-status {
+    color: #c7d2ff;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
 .team-cell {
     display: flex;
     align-items: center;

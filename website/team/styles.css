@@ -613,14 +613,34 @@ a:hover {
     border-bottom: none;
 }
 
-/* aliases to match player.html naming */
-.matches-section {
-    background: #1a1f3a;
-    border-radius: 0;
-    padding: 30px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    border: none;
+
+/* recent matches table */
+.recent-section {
+    margin-top: 26px;
     grid-area: matches;
+}
+
+
+.match-section-header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+.match-section-header h2 {
+    font-size: clamp(1.6rem, 2.5vw, 2.2rem);
+    letter-spacing: -0.03em;
+    color: #00ff41;
+}
+
+.table-shell {
+    overflow: hidden;
+    background: #1a1f3a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(12px);
 }
 
 .tournaments-section {
@@ -653,25 +673,116 @@ a:hover {
 .page-btn:disabled { opacity: 0.4; cursor: default; }
 .page-info { color: #84af8f; font-size: 0.9em; min-width: 60px; text-align: center; }
 
-.matches-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.matches-header h2 { color: #00ff41; font-size: 1.5em; margin: 0; }
-
-.matches-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+.matches-table { width: 100%; border-collapse: collapse; }
 .matches-table thead { background: #2a2f4a; border-bottom: 2px solid #84af8f; text-align: left; }
 .matches-table th { padding: 12px; text-align: left; color: #ffffff; font-weight: 600; text-transform: uppercase; font-size: 0.85em; letter-spacing: 0.5px; }
 .matches-table td { text-align: left; padding: 12px; color: #ffffff; border-bottom: 1px solid #2a2f4a; font-size: 0.95em; }
 .match-icon { max-height: 30px; max-width: 30px; border-radius: 0; object-fit: cover; }
-.matches-table tbody tr.match-win {
-    background: rgba(46, 204, 113, 0.22);
-    border-left: 6px solid #2ecc71;
-}
-.matches-table tbody tr.match-loss {
-    background: rgba(231, 76, 60, 0.22);
-    border-left: 6px solid #e74c3c;
-}
 .matches-table tbody tr:hover { background: #2a2f4a; }
+.matches-table tbody tr:hover .recent-team-pill { background: #2a2f4a; }
 .matches-table tfoot { border-top: 2px solid #84af8f; background: #2a2f4a; font-weight: 600; }
 .matches-table tfoot td { padding: 12px; color: #ffffff; border-bottom: none; }
+
+.recent-matchup-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.recent-team-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.recent-team-pill:hover {
+    background: rgba(46, 204, 113, 0.12);
+}
+
+.recent-team-icon {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    object-position: center;
+    flex-shrink: 0;
+    border-radius: 6px;
+}
+
+.recent-score-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 84px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(46, 204, 113, 0.12);
+    color: #dffdf0;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+}
+
+.recent-score-badge.is-win {
+    background: rgba(46, 204, 113, 0.16);
+    color: #7dffb0;
+}
+
+.recent-score-badge.is-loss {
+    background: rgba(231, 76, 60, 0.18);
+    color: #ffb1aa;
+}
+
+.recent-link-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    min-height: 38px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.recent-link-pill:hover {
+    background: rgba(77, 195, 255, 0.14);
+}
+
+.recent-table-empty {
+    text-align: center;
+    color: #a9b8d4;
+    padding: 30px 18px;
+}
+
+.recent-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.recent-page-button {
+    padding: 10px 16px;
+    border: 1px solid rgba(46, 204, 113, 0.5);
+    background: transparent;
+    color: #ffffff;
+    cursor: pointer;
+    border-radius: 0;
+}
+
+.recent-page-button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.recent-page-info {
+    color: #c7d2ff;
+}
 
 .filter-panel {
     background: #1a1f3a;
@@ -784,6 +895,13 @@ a:hover {
     margin-bottom: 20px;
 }
 
+.graph-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
 .compare-view-toggle {
     display: inline-flex;
     gap: 8px;
@@ -813,6 +931,20 @@ a:hover {
     color: #0a0e27;
 }
 
+.graph-collapse-toggle {
+    background: #14182d;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.graph-collapse-toggle:hover {
+    background: #1f2539;
+}
+
 .graph-header h2 {
     color: #00ff41;
     font-size: 1.5em;
@@ -825,23 +957,31 @@ a:hover {
 .ban-graph-section {
     background: #1a1f3a;
     border-radius: 0;
-    padding: 30px;
+    padding: 20px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     margin-top: 0;
     border: none;
-    gap: 20px;
+    gap: 12px;
     grid-area: bans;
+}
+
+.ban-graph-section.is-collapsed .ban-results-chart {
+    display: none;
+}
+
+.ban-graph-section.is-collapsed .graph-header {
+    margin-bottom: 0;
 }
 
 .ban-results-chart {
     display: grid;
-    gap: 16px;
-    margin-top: 15px;
+    gap: 10px;
+    margin-top: 10px;
 }
 
 .hero-bar-row {
     display: grid;
-    gap: 12px;
+    gap: 8px;
 }
 
 .hero-label {
@@ -858,23 +998,23 @@ a:hover {
 
 .hero-bars {
     display: grid;
-    gap: 10px;
+    gap: 6px;
 }
 
 .hero-bar-group {
     display: grid;
-    grid-template-columns: 1fr 3rem;
+    grid-template-columns: 1fr 2.5rem;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     position: relative;
 }
 
 .hero-bar-team-name {
     position: absolute;
-    top: -26px;
+    top: -22px;
     left: 0;
     color: #ffffff;
-    font-size: 0.9rem;
+    font-size: 0.82rem;
     opacity: 0;
     transition: opacity 0.2s ease, transform 0.2s ease;
     pointer-events: none;
@@ -893,7 +1033,7 @@ a:hover {
 .hero-bar-track {
     background: rgba(255, 255, 255, 0.08);
     border-radius: 999px;
-    height: 18px;
+    height: 12px;
     position: relative;
     overflow: hidden;
 }
@@ -921,23 +1061,31 @@ a:hover {
 .map-graph-section {
     background: #1a1f3a;
     border-radius: 0;
-    padding: 30px;
+    padding: 20px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     margin-top: 0;
     border: none;
-    gap: 20px;
+    gap: 12px;
     grid-area: maps;
+}
+
+.map-graph-section.is-collapsed .map-results-chart {
+    display: none;
+}
+
+.map-graph-section.is-collapsed .graph-header {
+    margin-bottom: 0;
 }
 
 .map-results-chart {
     display: grid;
-    gap: 16px;
-    margin-top: 15px;
+    gap: 10px;
+    margin-top: 10px;
 }
 
 .map-result-row {
     display: grid;
-    gap: 12px;
+    gap: 8px;
 }
 
 .map-result-label {
@@ -959,23 +1107,23 @@ a:hover {
 
 .map-result-bars {
     display: grid;
-    gap: 10px;
+    gap: 6px;
 }
 
 .map-result-bar-group {
     display: grid;
-    grid-template-columns: 1fr 3rem;
+    grid-template-columns: 1fr 2.5rem;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     position: relative;
 }
 
 .map-result-bar-name {
     position: absolute;
-    top: -26px;
+    top: -22px;
     left: 0;
     color: #ffffff;
-    font-size: 0.9rem;
+    font-size: 0.82rem;
     opacity: 0;
     transition: opacity 0.2s ease, transform 0.2s ease;
     pointer-events: none;
@@ -994,7 +1142,7 @@ a:hover {
 .map-result-bar-track {
     background: rgba(255, 255, 255, 0.08);
     border-radius: 999px;
-    height: 18px;
+    height: 12px;
     position: relative;
     overflow: hidden;
 }

@@ -146,25 +146,32 @@
         </div>
 
         <!-- Match History Section -->
-        <div class="matches-section">
-            <div class="matches-header">
-                <h2>Match History</h2>
+        <section class="recent-section">
+            <div class="match-section-header">
+                <div>
+                    <h2>Recent Matches</h2>
+                </div>
             </div>
-            <table class="matches-table" id="matchesTable">
-                <thead>
-                    <tr>
-                        <th colspan="2" width = 30%>Tournament</th>
-                        <th>Date</th>
-                        <th colspan="2">Opponent</th>
-                        <th colspan="2">Score</th>
-                    </tr>
-                </thead>
-                <tbody id="matchesTableBody">
-                </tbody>
-                <tfoot id="matchesTableFoot">
-                </tfoot>
-            </table>    
-        </div>
+
+            <div class="table-shell">
+                <table class="matches-table">
+                    <thead>
+                        <tr>
+                            <th>Tournament</th>
+                            <th>Date</th>
+                            <th>Matchup</th>
+                            <th>Score</th>
+                            <th>Link</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentMatchesBody">
+                        <tr>
+                            <td colspan="5" class="table-empty">Loading recent matches...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
     
         <!-- Hero Profile Section-->
         <div class="heroes-section">
@@ -191,9 +198,12 @@
         <div class="map-graph-section">
             <div class="graph-header">
                 <h2>Maps</h2>
-                <div class="compare-view-toggle" role="group" aria-label="Map results grouping">
-                    <button type="button" class="compare-view-button is-active" data-map-view="map">Map</button>
-                    <button type="button" class="compare-view-button" data-map-view="mode">Mode</button>
+                <div class="graph-header-actions">
+                    <div class="compare-view-toggle" role="group" aria-label="Map results grouping">
+                        <button type="button" class="compare-view-button is-active" data-map-view="map">Map</button>
+                        <button type="button" class="compare-view-button" data-map-view="mode">Mode</button>
+                    </div>
+                    <button type="button" class="graph-collapse-toggle" data-map-collapse-toggle aria-expanded="true" aria-controls="mapChart">Collapse</button>
                 </div>
             </div>
             <div class="map-results-chart" id="mapChart"></div>
@@ -206,7 +216,7 @@
         <div class="footer-content">
             <div class="footer-left">
                 <div class="footer-logo">Logo</div>
-                <div>Contact us: <a href="mailto:contact@example.com">contact@example.com</a></div>
+                <div>Discord: <a href="https://discord.com/users/1149620046147096627">Vern</a></div>
             </div>
             <div class="footer-links">
                 <a href="/help">Help</a>

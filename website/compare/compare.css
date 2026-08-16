@@ -407,6 +407,153 @@ a:hover {
     margin-bottom: 0;
 }
 
+.compare-section-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.recent-section {
+    margin-top: 6px;
+}
+
+.match-section-header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+.match-section-header h2 {
+    font-size: clamp(1.6rem, 2.5vw, 2.2rem);
+    letter-spacing: -0.03em;
+    color: #00ff41;
+    margin: 0;
+}
+
+.table-shell {
+    overflow: hidden;
+    background: #1a1f3a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(12px);
+}
+
+.matches-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.matches-table thead {
+    background: #2a2f4a;
+    border-bottom: 2px solid #84af8f;
+    text-align: left;
+}
+
+.matches-table th {
+    padding: 12px;
+    text-align: left;
+    color: #ffffff;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85em;
+    letter-spacing: 0.5px;
+}
+
+.matches-table td {
+    text-align: left;
+    padding: 12px;
+    color: #ffffff;
+    border-bottom: 1px solid #2a2f4a;
+    font-size: 0.95em;
+}
+
+.matches-table tbody tr:hover {
+    background: #2a2f4a;
+}
+
+.matches-table tbody tr:hover .team-pill {
+    background: #2a2f4a;
+}
+
+.matchup-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.team-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.team-pill:hover {
+    background: rgba(46, 204, 113, 0.12);
+}
+
+.team-icon {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    object-position: center;
+    flex-shrink: 0;
+    border-radius: 6px;
+}
+
+.score-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 84px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(46, 204, 113, 0.12);
+    color: #dffdf0;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+}
+
+.score-badge.is-win {
+    background: rgba(46, 204, 113, 0.16);
+    color: #7dffb0;
+}
+
+.score-badge.is-loss {
+    background: rgba(231, 76, 60, 0.18);
+    color: #ffb1aa;
+}
+
+.link-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    min-height: 38px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.link-pill:hover {
+    background: rgba(77, 195, 255, 0.14);
+}
+
+.table-empty {
+    text-align: center;
+    color: #a9b8d4;
+    padding: 30px 18px;
+}
+
 .compare-view-toggle {
     display: inline-flex;
     gap: 8px;
@@ -434,6 +581,37 @@ a:hover {
 .compare-view-button.is-active {
     background: #2ecc71;
     color: #0a0e27;
+}
+
+.graph-collapse-toggle {
+    background: #14182d;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.graph-collapse-toggle:hover {
+    background: #1f2539;
+    border-color: rgba(46, 204, 113, 0.5);
+}
+
+.graph-collapse-toggle:focus-visible {
+    outline: 2px solid #2ecc71;
+    outline-offset: 2px;
+}
+
+.compare-map-section.is-collapsed .map-chart,
+.compare-heroes-section.is-collapsed .ban-chart {
+    display: none;
+}
+
+.compare-map-section.is-collapsed .compare-section-header,
+.compare-heroes-section.is-collapsed .compare-section-header {
+    margin-bottom: 0;
 }
 
 .table-wrap {
@@ -480,12 +658,12 @@ a:hover {
 
 .ban-chart {
     display: grid;
-    gap: 16px;
+    gap: 10px;
 }
 
 .hero-bar-row {
     display: grid;
-    gap: 12px;
+    gap: 8px;
 }
 
 .hero-label {
@@ -513,23 +691,23 @@ a:hover {
 
 .hero-bars {
     display: grid;
-    gap: 10px;
+    gap: 6px;
 }
 
 .hero-bar-group {
     display: grid;
-    grid-template-columns: 1fr 3rem;
+    grid-template-columns: 1fr 2.5rem;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     position: relative;
 }
 
 .hero-bar-team-name {
     position: absolute;
-    top: -26px;
+    top: -22px;
     left: 0;
     color: #ffffff;
-    font-size: 0.9rem;
+    font-size: 0.82rem;
     opacity: 0;
     transition: opacity 0.2s ease, transform 0.2s ease;
     pointer-events: none;
@@ -550,9 +728,14 @@ a:hover {
 .hero-bar-track {
     background: rgba(255, 255, 255, 0.08);
     border-radius: 999px;
-    height: 18px;
+    height: 12px;
     position: relative;
     overflow: hidden;
+}
+
+.compare-map-section,
+.compare-heroes-section {
+    padding: 16px;
 }
 
 .hero-bar-fill {
