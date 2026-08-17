@@ -193,6 +193,30 @@ function buildAssetPath(path) {
   return path.startsWith('/') ? path : `/${path}`;
 }
 
+function getRoleIconPath(role) {
+  const normalizedRole = String(role || '').trim();
+  if (!normalizedRole) return '';
+
+  if (normalizedRole.toLowerCase() === 'dps') {
+    return '/content/images/roles/DPS.webp';
+  }
+
+  const titleCaseRole = normalizedRole.charAt(0).toUpperCase() + normalizedRole.slice(1).toLowerCase();
+  return `/content/images/roles/${encodeURIComponent(titleCaseRole)}.webp`;
+}
+
+function getModeIconPath(mode) {
+  const normalizedMode = String(mode || '').trim().toLowerCase();
+  if (!normalizedMode) return '';
+
+  const supportedModes = new Set(['control', 'escort', 'flashpoint', 'hybrid', 'push', 'clash']);
+  if (!supportedModes.has(normalizedMode)) {
+    return '';
+  }
+
+  return `/content/images/maps/modes/${encodeURIComponent(normalizedMode)}.webp`;
+}
+
 function normalizeHexColor(color) {
   const value = String(color || '').trim();
   if (!value.startsWith('#')) return '';
@@ -285,49 +309,13 @@ function formatWinRate(stats) {
   return `${Math.round((wins / played) * 100)}%`;
 }
 
-function buildMapRows(items, data, teamAColor, teamBColor) {
-  const maxWins = Math.max(1, ...items.flatMap(item => [item.teamA.wins || 0, item.teamB.wins || 0]));
-  const teamAIcon = buildTeamIcon(data.teamA, 'hover-team-icon');
-  const teamBIcon = buildTeamIcon(data.teamB, 'hover-team-icon');
-
-  return items.map(item => {
-    const teamAWidth = Math.round(((item.teamA.wins || 0) / maxWins) * 100);
-    const teamBWidth = Math.round(((item.teamB.wins || 0) / maxWins) * 100);
-    const subtitle = `Played ${item.teamA.played || 0} · Draws ${item.teamA.draws || 0}`;
-
-    return `
-      <div class="hero-bar-row map-bar-row">
-        <div class="hero-label map-label">
-          <span>${item.map_name}</span>
-          <small class="comparison-subtext">${subtitle}</small>
-        </div>
-        <div class="hero-bars">
-          <div class="hero-bar-group" data-team-name="${data.teamA.name}">
-            <span class="hero-bar-team-name" style="color: ${teamAColor};">${teamAIcon}</span>
-            <div class="hero-bar-track">
-              <div class="hero-bar-fill" style="width: ${teamAWidth}%; background: ${teamAColor};"></div>
-            </div>
-            <div class="hero-bar-value">${formatWinRate(item.teamA)}</div>
-          </div>
-          <div class="hero-bar-group" data-team-name="${data.teamB.name}">
-            <span class="hero-bar-team-name" style="color: ${teamBColor};">${teamBIcon}</span>
-            <div class="hero-bar-track">
-              <div class="hero-bar-fill" style="width: ${teamBWidth}%; background: ${teamBColor};"></div>
-            </div>
-            <div class="hero-bar-value">${formatWinRate(item.teamB)}</div>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
 function groupMapsByMode(maps) {
   const grouped = maps.reduce((acc, map) => {
     const mode = map.map_mode || 'Unknown';
     if (!acc[mode]) {
       acc[mode] = {
         map_name: mode,
+        map_icon: '',
         map_mode: mode,
         teamA: { played: 0, wins: 0, losses: 0, draws: 0 },
         teamB: { played: 0, wins: 0, losses: 0, draws: 0 }
@@ -351,7 +339,38 @@ function groupMapsByMode(maps) {
 
 function buildMapComparisonSection(data, teamAColor, teamBColor) {
   const items = currentMapView === 'mode' ? groupMapsByMode(data.maps) : data.maps;
-  const mapRows = buildMapRows(items, data, teamAColor, teamBColor);
+  const mapCards = items.map(item => {
+    const useModeIcon = currentMapView === 'mode';
+    const teamAWinRate = formatWinRate(item.teamA);
+    const teamBWinRate = formatWinRate(item.teamB);
+    const mapInitials = String(item.map_name || '?').trim().slice(0, 2).toUpperCase();
+    const rawIconPath = useModeIcon ? getModeIconPath(item.map_mode) : item.map_icon;
+    const mapIconPath = buildAssetPath(rawIconPath);
+    const iconMarkup = useModeIcon && mapIconPath
+      ? `<img src="${mapIconPath}" alt="${item.map_name}" class="map-pill-icon" loading="lazy">`
+      : '';
+    const fallbackBadge = iconMarkup
+      ? ''
+      : mapIconPath
+        ? ''
+        : `<div class="map-pill-badge" aria-hidden="true">${mapInitials || '?'}</div>`;
+    const mapBackgroundStyle = !useModeIcon && mapIconPath
+      ? ` style="--map-pill-bg-image: url('${mapIconPath.replace(/'/g, "%27")}')"`
+      : '';
+    const teamALine = `<span class="pill-team-line"><span class="pill-team-stat">${buildTeamIcon(data.teamA, 'hover-team-icon')}<span>WR ${teamAWinRate}</span></span><span class="pill-team-separator">|</span><span class="pill-team-stat pill-team-record"><span>${item.teamA.wins}/${item.teamA.losses}/${item.teamA.draws}</span></span></span>`;
+    const teamBLine = `<span class="pill-team-line"><span class="pill-team-stat">${buildTeamIcon(data.teamB, 'hover-team-icon')}<span>WR ${teamBWinRate}</span></span><span class="pill-team-separator">|</span><span class="pill-team-stat pill-team-record"><span>${item.teamB.wins}/${item.teamB.losses}/${item.teamB.draws}</span></span></span>`;
+
+    return `
+      <div class="map-pill${!useModeIcon && mapIconPath ? ' has-map-background' : ''}"${mapBackgroundStyle}>
+        ${iconMarkup}
+        ${fallbackBadge}
+        <div class="map-pill-content">
+          <span>${item.map_name}</span>
+          <strong class="pill-team-stats pill-team-stats-stacked">${teamALine}${teamBLine}</strong>
+        </div>
+      </div>
+    `;
+  }).join('');
   const mapCollapseLabel = mapSectionCollapsed ? 'Expand' : 'Collapse';
   const mapExpanded = String(!mapSectionCollapsed);
 
@@ -367,8 +386,8 @@ function buildMapComparisonSection(data, teamAColor, teamBColor) {
           <button type="button" class="graph-collapse-toggle" data-map-collapse-toggle aria-expanded="${mapExpanded}" aria-controls="compareMapChart">${mapCollapseLabel}</button>
         </div>
       </div>
-      <div class="ban-chart map-chart" id="compareMapChart">
-        ${mapRows}
+      <div class="map-results-chart map-chart" id="compareMapChart">
+        <div class="map-pill-grid${currentMapView === 'mode' ? ' is-mode-grid' : ''}">${mapCards}</div>
       </div>
     </section>
   `;
@@ -396,53 +415,12 @@ function groupCompareBansByRole(items) {
   return Object.values(grouped).sort((a, b) => (b.teamA + b.teamB) - (a.teamA + a.teamB));
 }
 
-function buildCompareBanRows(items, heroNames, teamAColor, teamBColor) {
-  const maxBanCount = Math.max(1, ...items.flatMap(item => [item.teamA, item.teamB]));
-  const teamAIcon = buildTeamIcon(lastComparisonData.teamA, 'hover-team-icon');
-  const teamBIcon = buildTeamIcon(lastComparisonData.teamB, 'hover-team-icon');
-
-  return items.map(item => {
-    const teamAWidth = Math.round((item.teamA / maxBanCount) * 100);
-    const teamBWidth = Math.round((item.teamB / maxBanCount) * 100);
-    const label = currentBanView === 'role'
-      ? `<span>${item.hero_name}</span>`
-      : `
-        <img src="../${item.hero_icon}" alt="${item.hero_name}" class="hero-icon">
-        <span>${item.hero_name}</span>
-      `;
-
-    return `
-      <div class="hero-bar-row">
-        <div class="hero-label${currentBanView === 'role' ? ' role-label' : ''}">
-          ${label}
-        </div>
-        <div class="hero-bars">
-          <div class="hero-bar-group" data-team-name="${heroNames.teamA}">
-            <span class="hero-bar-team-name" style="color: ${teamAColor};">${teamAIcon}</span>
-            <div class="hero-bar-track">
-              <div class="hero-bar-fill" style="width: ${teamAWidth}%; background: ${teamAColor};"></div>
-            </div>
-            <div class="hero-bar-value">${item.teamA}</div>
-          </div>
-          <div class="hero-bar-group" data-team-name="${heroNames.teamB}">
-            <span class="hero-bar-team-name" style="color: ${teamBColor};">${teamBIcon}</span>
-            <div class="hero-bar-track">
-              <div class="hero-bar-fill" style="width: ${teamBWidth}%; background: ${teamBColor};"></div>
-            </div>
-            <div class="hero-bar-value">${item.teamB}</div>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
 function renderComparison(data) {
   lastComparisonData = data;
   const teamASummary = buildStatsCard(buildTeamTitle(data.teamA, 'Totals'), data.teamA.totals);
   const teamBSummary = buildStatsCard(buildTeamTitle(data.teamB, 'Totals'), data.teamB.totals);
-  const teamAColor = data.teamA.colour || '#2ecc71';
-  const teamBColor = data.teamB.colour || '#72f194';
+  const teamAColor = data.teamA.colour || '#00ff8c';
+  const teamBColor = data.teamB.colour || '#00ff8c';
   const teamAIcon = buildTeamIcon(data.teamA, 'head-card-icon');
   const teamBIcon = buildTeamIcon(data.teamB, 'head-card-icon');
 
@@ -514,7 +492,30 @@ function renderComparison(data) {
     }))
     .sort((a, b) => (b.teamA + b.teamB) - (a.teamA + a.teamB));
   const banItems = currentBanView === 'role' ? groupCompareBansByRole(heroItems) : heroItems;
-  const banRows = buildCompareBanRows(banItems, heroNames, teamAColor, teamBColor);
+  const banCards = banItems.map(item => {
+    const roleIcon = currentBanView === 'role' ? getRoleIconPath(item.hero_name) : '';
+    const iconMarkup = currentBanView === 'hero'
+      ? `<img src="${buildAssetPath(item.hero_icon)}" alt="${item.hero_name}" loading="lazy">`
+      : roleIcon
+        ? `<img src="${roleIcon}" alt="${item.hero_name}" loading="lazy" class="ban-pill-role-icon">`
+        : `<div class="ban-pill-role" aria-hidden="true">${String(item.hero_name || '?').charAt(0).toUpperCase()}</div>`;
+    const totalBans = parseStatValue(item.teamA) + parseStatValue(item.teamB);
+    const teamABans = `${buildTeamIcon(data.teamA, 'hover-team-icon')}<span>${item.teamA}</span>`;
+    const teamBBans = `${buildTeamIcon(data.teamB, 'hover-team-icon')}<span>${item.teamB}</span>`;
+
+    return `
+      <div class="ban-pill">
+        <span class="ban-pill-title">${item.hero_name}</span>
+        <div class="ban-pill-body">
+          ${iconMarkup}
+          <div class="ban-pill-content">
+            <strong>${totalBans} bans</strong>
+            <small class="pill-team-stats"><span class="pill-team-stat">${teamABans}</span><span class="pill-team-stat">${teamBBans}</span></small>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
   const heroCollapseLabel = heroSectionCollapsed ? 'Expand' : 'Collapse';
   const heroExpanded = String(!heroSectionCollapsed);
 
@@ -530,8 +531,8 @@ function renderComparison(data) {
           <button type="button" class="graph-collapse-toggle" data-ban-collapse-toggle aria-expanded="${heroExpanded}" aria-controls="compareBanChart">${heroCollapseLabel}</button>
         </div>
       </div>
-      <div class="ban-chart" id="compareBanChart">
-        ${banRows}
+      <div class="ban-results-chart ban-chart" id="compareBanChart">
+        <div class="ban-pill-grid">${banCards}</div>
       </div>
     </section>
   `;

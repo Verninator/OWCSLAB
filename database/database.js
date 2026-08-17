@@ -1,22 +1,217 @@
 import mssql from 'mssql';
+import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const config = {
-    user: process.env.AZURE_USER, 
-    password: process.env.AZURE_PASSWORD, 
-    server: process.env.AZURE_HOST, 
-    database: process.env.AZURE_DATABASE, 
-    authentication: {
-        type: 'default'
-    },
-    options: {
-        encrypt: true
+function parsePositiveInt(value, fallback) {
+    const parsed = Number(value);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function firstDefined(...values) {
+    for (const value of values) {
+        if (typeof value === 'string' && value.trim()) {
+            return value.trim();
+        }
+    }
+    return undefined;
+}
+
+const dbConnectTimeoutMs = parsePositiveInt(process.env.DB_CONNECT_TIMEOUT_MS, 180000);
+const dbRequestTimeoutMs = parsePositiveInt(process.env.DB_REQUEST_TIMEOUT_MS, 180000);
+const dbConnectRetryAttempts = parsePositiveInt(process.env.DB_CONNECT_RETRY_ATTEMPTS, 6);
+const dbConnectRetryDelayMs = parsePositiveInt(process.env.DB_CONNECT_RETRY_DELAY_MS, 5000);
+
+const secretClient = new SecretManagerServiceClient();
+
+let connectedPool = null;
+let connectingPoolPromise = null;
+let resolvedDbSettingsPromise = null;
+
+async function readSecretValue(secretName) {
+    const projectId = firstDefined(process.env.GOOGLE_CLOUD_PROJECT, process.env.GCLOUD_PROJECT, process.env.GCP_PROJECT);
+    if (!projectId) {
+        throw new Error('Missing GOOGLE_CLOUD_PROJECT while trying to read database secrets from Secret Manager.');
+    }
+
+    const secretVersionName = `projects/${projectId}/secrets/${secretName}/versions/latest`;
+    const [version] = await secretClient.accessSecretVersion({ name: secretVersionName });
+    const secretValue = version.payload?.data?.toString('utf8').trim();
+    if (!secretValue) {
+        throw new Error(`Secret ${secretName} has an empty payload.`);
+    }
+    return secretValue;
+}
+
+async function resolveValueFromEnvOrSecret(envKeys, secretEnvKeys) {
+    const directValue = firstDefined(...envKeys.map(key => process.env[key]));
+    if (directValue) {
+        return directValue;
+    }
+
+    const secretName = firstDefined(...secretEnvKeys.map(key => process.env[key]));
+    if (!secretName) {
+        return undefined;
+    }
+
+    return readSecretValue(secretName);
+}
+
+async function getDbSettings() {
+    if (resolvedDbSettingsPromise) {
+        return resolvedDbSettingsPromise;
+    }
+
+    resolvedDbSettingsPromise = (async () => {
+        const dbUser = await resolveValueFromEnvOrSecret(
+            ['AZURE_USER', 'DB_USER', 'SQL_USER'],
+            ['AZURE_USER_SECRET', 'DB_USER_SECRET', 'SQL_USER_SECRET']
+        );
+        const dbPassword = await resolveValueFromEnvOrSecret(
+            ['AZURE_PASSWORD', 'DB_PASSWORD', 'SQL_PASSWORD'],
+            ['AZURE_PASSWORD_SECRET', 'DB_PASSWORD_SECRET', 'SQL_PASSWORD_SECRET']
+        );
+        const dbServer = await resolveValueFromEnvOrSecret(
+            ['AZURE_HOST', 'DB_HOST', 'SQL_HOST', 'SQL_SERVER'],
+            ['AZURE_HOST_SECRET', 'DB_HOST_SECRET', 'SQL_HOST_SECRET', 'SQL_SERVER_SECRET']
+        );
+        const dbName = await resolveValueFromEnvOrSecret(
+            ['AZURE_DATABASE', 'DB_NAME', 'SQL_DATABASE'],
+            ['AZURE_DATABASE_SECRET', 'DB_NAME_SECRET', 'SQL_DATABASE_SECRET']
+        );
+
+        const missingDbSettings = [];
+        if (!dbUser) missingDbSettings.push('AZURE_USER or AZURE_USER_SECRET');
+        if (!dbPassword) missingDbSettings.push('AZURE_PASSWORD or AZURE_PASSWORD_SECRET');
+        if (!dbServer) missingDbSettings.push('AZURE_HOST or AZURE_HOST_SECRET');
+        if (!dbName) missingDbSettings.push('AZURE_DATABASE or AZURE_DATABASE_SECRET');
+
+        if (missingDbSettings.length) {
+            throw new Error(`Missing required database settings: ${missingDbSettings.join(', ')}`);
+        }
+
+        return {
+            user: dbUser,
+            password: dbPassword,
+            server: dbServer,
+            database: dbName
+        };
+    })();
+
+    return resolvedDbSettingsPromise;
+}
+
+function isTransientSqlError(error) {
+    const code = String(error?.code || '').toUpperCase();
+    const message = String(error?.message || '').toLowerCase();
+
+    const transientCodes = new Set([
+        'ETIMEOUT',
+        'ESOCKET',
+        'ECONNRESET',
+        'ECONNCLOSED',
+        'ELOGIN'
+    ]);
+
+    return transientCodes.has(code)
+        || message.includes('timeout')
+        || message.includes('temporarily unavailable')
+        || message.includes('paused')
+        || message.includes('resum')
+        || message.includes('throttl');
+}
+
+async function connectWithRetry(config) {
+    let lastError;
+
+    for (let attempt = 1; attempt <= dbConnectRetryAttempts; attempt += 1) {
+        try {
+            const poolConnection = await mssql.connect(config);
+            poolConnection.on('error', (poolError) => {
+                console.error('SQL pool error; clearing cached pool', poolError);
+                connectedPool = null;
+            });
+            return poolConnection;
+        } catch (error) {
+            lastError = error;
+            if (!isTransientSqlError(error) || attempt === dbConnectRetryAttempts) {
+                throw error;
+            }
+
+            const delayMs = dbConnectRetryDelayMs * attempt;
+            console.warn(`SQL connect attempt ${attempt}/${dbConnectRetryAttempts} failed; retrying in ${delayMs}ms`, error?.message || error);
+            await sleep(delayMs);
+        }
+    }
+
+    throw lastError;
+}
+
+async function getConnectedPool() {
+    if (connectedPool) {
+        return connectedPool;
+    }
+
+    if (connectingPoolPromise) {
+        return connectingPoolPromise;
+    }
+
+    connectingPoolPromise = (async () => {
+        const dbSettings = await getDbSettings();
+        const config = {
+            ...dbSettings,
+            authentication: {
+                type: 'default'
+            },
+            options: {
+                encrypt: true
+            },
+            pool: {
+                max: 10,
+                min: 0,
+                idleTimeoutMillis: 30000
+            },
+            connectionTimeout: dbConnectTimeoutMs,
+            requestTimeout: dbRequestTimeoutMs
+        };
+        return connectWithRetry(config);
+    })();
+    try {
+        connectedPool = await connectingPoolPromise;
+        return connectedPool;
+    } finally {
+        connectingPoolPromise = null;
     }
 }
 
-
-export const pool = await mssql.connect(config);
+export const pool = {
+    async query(sqlText) {
+        const activePool = await getConnectedPool();
+        return activePool.query(sqlText);
+    },
+    request() {
+        const requestInputs = [];
+        const requestFacade = {
+            input(name, type, value) {
+                requestInputs.push({ name, type, value });
+                return requestFacade;
+            },
+            async query(sqlText) {
+                const activePool = await getConnectedPool();
+                let request = activePool.request();
+                for (const entry of requestInputs) {
+                    request = request.input(entry.name, entry.type, entry.value);
+                }
+                return request.query(sqlText);
+            }
+        };
+        return requestFacade;
+    }
+};
 
 function buildTournamentFilterClause(columnName, tournamentIds = [], mode = 'include') {
     const ids = Array.isArray(tournamentIds)
@@ -132,7 +327,7 @@ export async function getHeadtoHead(teamAId,teamBId, tournamentIds = [], mode = 
     .input('teamAId', mssql.Int, normalizedTeamAId)
     .input('teamBId', mssql.Int, normalizedTeamBId)
     .query(`
-        SELECT ts.map_id, m.name AS map_name, m.mode AS map_mode, ts.team_id,
+        SELECT ts.map_id, m.name AS map_name, m.icon AS map_icon, m.mode AS map_mode, ts.team_id,
         SUM(CASE WHEN ts.result = 'Win' THEN 1 ELSE 0 END) AS wins,
         SUM(CASE WHEN ts.result = 'Loss' THEN 1 ELSE 0 END) AS losses,
         SUM(CASE WHEN ts.result = 'Draw' THEN 1 ELSE 0 END) AS draws,
@@ -141,7 +336,7 @@ export async function getHeadtoHead(teamAId,teamBId, tournamentIds = [], mode = 
         INNER JOIN maps m ON ts.map_id = m.map_id
         WHERE ((ts.team_id = @teamAId AND ts.opponent_id = @teamBId) OR (ts.team_id = @teamBId AND ts.opponent_id = @teamAId))
         ${whereClause}
-        GROUP BY ts.map_id, m.name, m.mode, ts.team_id
+        GROUP BY ts.map_id, m.name, m.icon, m.mode, ts.team_id
         ORDER BY m.name ASC
     `);
     return results.recordset
@@ -494,6 +689,7 @@ export async function getPlayerMapStats(player_id, tournamentIds = [], mode = 'i
     const results =  await pool.request().query(`
     SELECT
     m.name as map,
+    m.icon as map_icon,
     m.mode as mode,
     COUNT(p.map_id) as played,
     SUM(CASE WHEN  p.result = 'Win' THEN 1 ELSE 0 END) won, 
@@ -505,7 +701,7 @@ export async function getPlayerMapStats(player_id, tournamentIds = [], mode = 'i
     ON m.map_id = p.map_id
     ${joinClause}
     WHERE p.player_id = ${player_id}
-    GROUP BY p.map_id, m.name, m.mode
+    GROUP BY p.map_id, m.name, m.icon, m.mode
     ORDER BY played DESC
         `,
     [...values]
@@ -739,6 +935,7 @@ export async function getTeamMapStats(team_id, tournamentIds = [], mode = 'inclu
     const results =  await pool.request().query(`
     SELECT
     m.name as map,
+    m.icon as map_icon,
     m.mode as mode,
     COUNT(t.map_id) as played,
     SUM(CASE WHEN  t.result = 'Win' THEN 1 ELSE 0 END) won, 
@@ -750,7 +947,7 @@ export async function getTeamMapStats(team_id, tournamentIds = [], mode = 'inclu
     ON m.map_id = t.map_id
     WHERE t.team_id = ${team_id}
     ${whereClause}
-    GROUP BY t.map_id,m.name, m.mode
+    GROUP BY t.map_id,m.name, m.icon, m.mode
     ORDER BY played DESC
         `,
     [...values]

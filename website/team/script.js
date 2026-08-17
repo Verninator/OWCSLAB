@@ -33,6 +33,30 @@ function resolveAssetPath(value) {
   return `/${path}`;
 }
 
+function getRoleIconPath(role) {
+  const normalizedRole = String(role || '').trim();
+  if (!normalizedRole) return '';
+
+  if (normalizedRole.toLowerCase() === 'dps') {
+    return '/content/images/roles/DPS.webp';
+  }
+
+  const titleCaseRole = normalizedRole.charAt(0).toUpperCase() + normalizedRole.slice(1).toLowerCase();
+  return `/content/images/roles/${encodeURIComponent(titleCaseRole)}.webp`;
+}
+
+function getModeIconPath(mode) {
+  const normalizedMode = String(mode || '').trim().toLowerCase();
+  if (!normalizedMode) return '';
+
+  const supportedModes = new Set(['control', 'escort', 'flashpoint', 'hybrid', 'push', 'clash']);
+  if (!supportedModes.has(normalizedMode)) {
+    return '';
+  }
+
+  return `/content/images/maps/modes/${encodeURIComponent(normalizedMode)}.webp`;
+}
+
 function buildTournamentQuery() {
   const params = new URLSearchParams({
     tournaments: selectedTournamentIds.join(','),
@@ -211,7 +235,7 @@ async function loadTeamData() {
     const teamNameEl = document.getElementById('teamName');
     if (teamNameEl){
       teamNameEl.textContent = data.team_details.name;
-      teamNameEl.style.color = data.team_details.colour || "#00ff41";
+      teamNameEl.style.color = data.team_details.colour || "#00ff8c";
     }
     const teamLogoEl = document.getElementById('teamLogo');
     if (teamLogoEl && data.team_details.icon) teamLogoEl.src = '../' + data.team_details.icon;
@@ -324,18 +348,6 @@ function populateRoster(roster, teamDetails = {}) {
   if (!roster || roster.length === 0) {
     container.innerHTML = '<div class="team-box-empty">No roster members available.</div>';
     return;
-  }
-
-  function getRoleIconPath(role) {
-    const normalizedRole = String(role || '').trim();
-    if (!normalizedRole) return '';
-
-    if (normalizedRole.toLowerCase() === 'dps') {
-      return '/content/images/roles/DPS.webp';
-    }
-
-    const titleCaseRole = normalizedRole.charAt(0).toUpperCase() + normalizedRole.slice(1).toLowerCase();
-    return `/content/images/roles/${encodeURIComponent(titleCaseRole)}.webp`;
   }
 
   function renderRoleCell(role) {
@@ -584,44 +596,38 @@ function renderMapResults() {
     ? groupMapsByMode(teamMapData)
     : sortMapsByWinRate(teamMapData);
 
-  const maxValue = Math.max(1, ...mapsToRender.flatMap(map => [map.won, map.drawn, map.lost]));
-  const resultTypes = [
-    { key: 'won', label: 'Won', color: '#2ecc71' },
-    { key: 'drawn', label: 'Draw', color: '#e7e294' },
-    { key: 'lost', label: 'Lost', color: '#e74c3c' }
-  ];
-
-  container.innerHTML = mapsToRender.map(map => {
+  const mapCards = mapsToRender.map(map => {
     const winRate = map.played ? Math.round((map.won / map.played) * 100) : 0;
-    const bars = resultTypes
-      .filter(result => result.key !== 'drawn' || map.drawn > 0)
-      .map(result => {
-      const value = map[result.key];
-      const width = Math.round((value / maxValue) * 100);
-
-      return `
-        <div class="map-result-bar-group" data-result-type="${result.label}">
-          <span class="map-result-bar-name" style="color: ${result.color};">${result.label}</span>
-          <div class="map-result-bar-track">
-            <div class="map-result-bar-fill" style="width: ${width}%; background: ${result.color};"></div>
-          </div>
-          <div class="map-result-bar-value">${value}</div>
-        </div>
-      `;
-    }).join('');
+    const mapInitials = String(map.map || '?').trim().slice(0, 2).toUpperCase();
+    const useModeIcon = currentMapView === 'mode';
+    const rawIconPath = useModeIcon ? getModeIconPath(map.mode) : map.mapIcon;
+    const mapIconPath = resolveAssetPath(rawIconPath);
+    const iconMarkup = useModeIcon && mapIconPath
+      ? `<img src="${mapIconPath}" alt="${map.map}" class="map-pill-icon" loading="lazy">`
+      : '';
+    const fallbackBadge = iconMarkup
+      ? ''
+      : mapIconPath
+      ? ''
+      : `<div class="map-pill-badge" aria-hidden="true">${mapInitials || '?'}</div>`;
+    const mapBackgroundStyle = !useModeIcon && mapIconPath
+      ? ` style="--map-pill-bg-image: url('${mapIconPath.replace(/'/g, "%27")}')"`
+      : '';
 
     return `
-      <div class="map-result-row">
-        <div class="map-result-label">
+      <div class="map-pill${!useModeIcon && mapIconPath ? ' has-map-background' : ''}"${mapBackgroundStyle}>
+        ${iconMarkup}
+        ${fallbackBadge}
+        <div class="map-pill-content">
           <span>${map.map}</span>
-          <small class="comparison-subtext">Played ${map.played} · Win Rate ${winRate}%</small>
-        </div>
-        <div class="map-result-bars">
-          ${bars}
+          <strong>${winRate}% win rate</strong>
+          <small>Played ${map.played} | Won ${map.won} | Draw ${map.drawn} | Lost ${map.lost}</small>
         </div>
       </div>
     `;
   }).join('');
+
+  container.innerHTML = `<div class="map-pill-grid">${mapCards}</div>`;
 
   document.querySelectorAll('[data-map-view]').forEach(button => {
     button.classList.toggle('is-active', button.dataset.mapView === currentMapView);
@@ -652,46 +658,30 @@ function renderBanResults() {
   }
 
   const items = currentBanView === 'role' ? groupTeamBansByRole(teamBanData) : teamBanData;
-  const maxValue = Math.max(1, ...items.flatMap(ban => [ban.bansFor, ban.bansAgainst]));
-  const resultTypes = [
-    { key: 'bansFor', label: 'By', color: '#2ecc71' },
-    { key: 'bansAgainst', label: 'Against', color: '#e74c3c' }
-  ];
-
-  container.innerHTML = items.map(ban => {
-    const bars = resultTypes.map(result => {
-      const value = ban[result.key];
-      const width = Math.round((value / maxValue) * 100);
-
-      return `
-        <div class="hero-bar-group" data-team-name="${result.label}">
-          <span class="hero-bar-team-name" style="color: ${result.color};">${result.label}</span>
-          <div class="hero-bar-track">
-            <div class="hero-bar-fill" style="width: ${width}%; background: ${result.color};"></div>
-          </div>
-          <div class="hero-bar-value">${value}</div>
-        </div>
-      `;
-    }).join('');
-
-    const label = currentBanView === 'role'
-      ? `<span>${ban.hero}</span>`
-      : `
-        <img src="../${ban.heroIcon}" alt="${ban.hero}" class="hero-icon">
-        <span>${ban.hero}</span>
-      `;
+  const banCards = items.map(ban => {
+    const totalBans = Number(ban.bansFor || 0) + Number(ban.bansAgainst || 0);
+    const hasHeroIcon = currentBanView !== 'role' && ban.heroIcon;
+    const roleIcon = currentBanView === 'role' ? getRoleIconPath(ban.hero) : '';
+    const roleBadge = ban.hero ? ban.hero.charAt(0).toUpperCase() : '?';
+    const iconMarkup = hasHeroIcon
+      ? `<img src="../${ban.heroIcon}" alt="${ban.hero}" loading="lazy">`
+      : roleIcon
+        ? `<img src="${roleIcon}" alt="${ban.hero}" loading="lazy" class="ban-pill-role-icon">`
+        : `<div class="ban-pill-role" aria-hidden="true">${roleBadge}</div>`;
 
     return `
-      <div class="hero-bar-row">
-        <div class="hero-label${currentBanView === 'role' ? ' role-label' : ''}">
-          ${label}
-        </div>
-        <div class="hero-bars">
-          ${bars}
+      <div class="ban-pill">
+        ${iconMarkup}
+        <div class="ban-pill-content">
+          <span>${ban.hero}</span>
+          <strong>${totalBans} bans</strong>
+          <small>By ${ban.bansFor} | Against ${ban.bansAgainst}</small>
         </div>
       </div>
     `;
   }).join('');
+
+  container.innerHTML = `<div class="ban-pill-grid">${banCards}</div>`;
 
   document.querySelectorAll('[data-ban-view]').forEach(button => {
     button.classList.toggle('is-active', button.dataset.banView === currentBanView);
@@ -703,6 +693,7 @@ function initializeMapChart(maps) {
   teamMapData = (maps || [])
     .map((map, index) => ({
       map: map.map || `Map ${index + 1}`,
+      mapIcon: map.map_icon || '',
       mode: map.mode || 'Unknown',
       played: Number.parseInt(map.played, 10) || 0,
       won: Number.parseInt(map.won, 10) || 0,

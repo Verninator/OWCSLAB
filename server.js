@@ -28,6 +28,7 @@ app.use('/maps', express.static(__dirname + '/website/map'));
 // Serve compare page assets under /compare
 app.use('/compare', express.static(__dirname + '/website/compare'));
 app.use('/home', express.static(__dirname + '/website/home'));
+app.use('/info', express.static(__dirname + '/website/info'));
 
 app.get('/', (req,res) => {
     res.sendFile('website/home/index.html', { root: __dirname });
@@ -35,18 +36,20 @@ app.get('/', (req,res) => {
 
 app.get('/api/home', async (req, res) => {
     try {
-        const [[matchCountRow]] = await db.pool.query(`
+        const matchCountResult = await db.pool.request().query(`
             SELECT COUNT(*) AS total_matches
             FROM matches
         `);
+        const matchCountRow = matchCountResult.recordset[0];
 
-        const [[playerStatCountRow]] = await db.pool.query(`
+        const playerStatCountResult = await db.pool.request().query(`
             SELECT COUNT(*) AS total_player_stats
             FROM player_stats
         `);
+        const playerStatCountRow = playerStatCountResult.recordset[0];
 
-        const [recentMatches] = await db.pool.query(`
-            SELECT
+        const recentMatchesResult = await db.pool.request().query(`
+            SELECT TOP 12
                 m.match_id,
                 m.date,
                 t.name AS tournament,
@@ -63,8 +66,8 @@ app.get('/api/home', async (req, res) => {
             INNER JOIN teams team_1 ON team_1.team_id = m.team_1_id
             INNER JOIN teams team_2 ON team_2.team_id = m.team_2_id
             ORDER BY m.date DESC
-            LIMIT 12
         `);
+        const recentMatches = recentMatchesResult.recordset;
 
         res.json({
             totalMatches: Number(matchCountRow?.total_matches) || 0,
@@ -222,6 +225,7 @@ app.get('/api/compare', async (req, res) => {
                 mapResults[row.map_id] = {
                     map_id: row.map_id,
                     map_name: row.map_name,
+                    map_icon: row.map_icon,
                     map_mode: row.map_mode,
                     teamA: { played: 0, wins: 0, losses: 0, draws: 0 },
                     teamB: { played: 0, wins: 0, losses: 0, draws: 0 }
@@ -502,6 +506,22 @@ app.get('/compare', (req,res) => {
 app.get('/teams', (req,res) => {
     res.sendFile('website/team/index.html', {root: __dirname })
 })
+
+app.get('/help', (req, res) => {
+    res.sendFile('website/info/help.html', { root: __dirname });
+});
+
+app.get('/about', (req, res) => {
+    res.sendFile('website/info/about.html', { root: __dirname });
+});
+
+app.get('/privacy', (req, res) => {
+    res.sendFile('website/info/privacy.html', { root: __dirname });
+});
+
+app.get('/terms', (req, res) => {
+    res.sendFile('website/info/terms.html', { root: __dirname });
+});
 
 
 

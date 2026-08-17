@@ -4,6 +4,13 @@
     box-sizing: border-box;
 }
 
+:root {
+    --theme-accent-a: #00ff8c;
+    --theme-accent-b: #00ff8c;
+    --theme-accent-c: #00ff8c;
+    --theme-accent-gradient: linear-gradient(135deg, rgba(0, 255, 140, 0.94), rgba(0, 255, 140, 0.9));
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
@@ -24,7 +31,7 @@ body {
     top: 0;
     width: 100%;
     z-index: 1000;
-    border-bottom: 4px solid #2ecc71;
+    border-bottom: 4px solid var(--theme-accent-a);
 }
 
 .topbar-brand {
@@ -33,10 +40,16 @@ body {
     gap: 10px;
 }
 
+.topbar-home-link,
+.topbar-home-link:hover {
+    text-decoration: none;
+    color: inherit;
+}
+
 .topbar-logo {
     width: 40px;
     height: 40px;
-    background: #2ecc71;
+    background: var(--theme-accent-gradient);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -47,7 +60,7 @@ body {
 
 .topbar-site-name {
     color: #ffffff;
-    font-size: 1rem;
+    font-size: 1.3rem;
     font-weight: 700;
 }
 
@@ -63,23 +76,23 @@ body {
     justify-content: center;
     padding: 10px 14px;
     background: #14182d;
-    color: #2ecc71;
+    color: var(--theme-accent-a);
     text-decoration: none;
     font-weight: 600;
 }
 
 .topbar-link:hover {
     background: #1f2539;
-    color: #72f194;
+    color: var(--theme-accent-b);
 }
 
 a {
-    color: #2ecc71;
+    color: var(--theme-accent-a);
     text-decoration: none;
 }
 
 a:hover {
-    color: #72f194;
+    color: var(--theme-accent-b);
     text-decoration: underline;
 }
 
@@ -112,7 +125,7 @@ a:hover {
     border: none;
     border-radius: 999px;
     padding: 8px 14px;
-    background: #2ecc71;
+    background: #00ff8c;
     color: #0a0e27;
     font-weight: 700;
     cursor: pointer;
@@ -170,8 +183,8 @@ a:hover {
 }
 
 .filter-option.is-active {
-    background: rgba(46, 204, 113, 0.2);
-    border-color: rgba(46, 204, 113, 0.45);
+    background: rgba(0, 255, 140, 0.2);
+    border-color: rgba(0, 255, 140, 0.45);
 }
 
 .empty-chart-message {
@@ -184,7 +197,7 @@ a:hover {
 }
 
 .map-list-intro h1 {
-    color: #00ff41;
+    color: #00ff8c;
     font-size: 2.4rem;
     margin-bottom: 12px;
 }
@@ -380,7 +393,7 @@ a:hover {
 }
 
 .ban-pill strong {
-    color: #72f194;
+    color: #00ff8c;
     display: block;
     font-size: 0.95rem;
 }
@@ -424,9 +437,9 @@ a:hover {
 }
 
 .team-page-button {
-    border: 1px solid rgba(46, 204, 113, 0.4);
-    background: rgba(46, 204, 113, 0.12);
-    color: #72f194;
+    border: 1px solid rgba(0, 255, 140, 0.4);
+    background: rgba(0, 255, 140, 0.12);
+    color: #00ff8c;
     width: 34px;
     height: 34px;
     border-radius: 999px;
@@ -437,7 +450,7 @@ a:hover {
 
 .team-page-button:hover:not(:disabled) {
     transform: translateY(-1px);
-    background: rgba(46, 204, 113, 0.2);
+    background: rgba(0, 255, 140, 0.2);
 }
 
 .team-page-button:disabled {
@@ -470,7 +483,7 @@ a:hover {
 
 .site-footer {
     background: #14182d;
-    border-top: 4px solid #2ecc71;
+    border-top: 4px solid #00ff8c;
     padding: 16px 20px;
     margin-top: 16px;
     color: #ffffff;
@@ -494,7 +507,7 @@ a:hover {
 .footer-logo {
     width: 32px;
     height: 32px;
-    background: #2ecc71;
+    background: #00ff8c;
     display: flex;
     align-items: center;
     justify-content: center;

@@ -4,6 +4,13 @@
     box-sizing: border-box;
 }
 
+:root {
+    --theme-accent-a: #00ff8c;
+    --theme-accent-b: #00ff8c;
+    --theme-accent-c: #00ff8c;
+    --theme-accent-gradient: linear-gradient(135deg, rgba(0, 255, 140, 0.94), rgba(0, 255, 140, 0.9));
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
@@ -24,7 +31,7 @@ body {
     top: 0;
     width: 100%;
     z-index: 1000;
-    border-bottom: 4px solid #2ecc71;
+    border-bottom: 4px solid var(--theme-accent-a);
 }
 
 .topbar-brand {
@@ -33,10 +40,16 @@ body {
     gap: 10px;
 }
 
+.topbar-home-link,
+.topbar-home-link:hover {
+    text-decoration: none;
+    color: inherit;
+}
+
 .topbar-logo {
     width: 40px;
     height: 40px;
-    background: #2ecc71;
+    background: var(--theme-accent-gradient);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -47,7 +60,7 @@ body {
 
 .topbar-site-name {
     color: #ffffff;
-    font-size: 1rem;
+    font-size: 1.3rem;
     font-weight: 700;
 }
 
@@ -63,23 +76,23 @@ body {
     justify-content: center;
     padding: 10px 14px;
     background: #14182d;
-    color: #2ecc71;
+    color: var(--theme-accent-a);
     text-decoration: none;
     font-weight: 600;
 }
 
 .topbar-link:hover {
     background: #1f2539;
-    color: #72f194;
+    color: var(--theme-accent-b);
 }
 
 a {
-    color: #2ecc71;
+    color: var(--theme-accent-a);
     text-decoration: none;
 }
 
 a:hover {
-    color: #72f194;
+    color: var(--theme-accent-b);
     text-decoration: underline;
 }
 
@@ -98,7 +111,7 @@ a:hover {
 }
 .site-footer {
     background: #14182d;
-    border-top: 4px solid #2ecc71;
+    border-top: 4px solid #00ff8c;
     padding: 16px 20px;
     margin-top: 16px;
     color: #ffffff;
@@ -122,7 +135,7 @@ a:hover {
 .footer-logo {
     width: 32px;
     height: 32px;
-    background: #2ecc71;
+    background: #00ff8c;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -194,8 +207,8 @@ a:hover {
 
 .table-search input:focus {
     outline: none;
-    border-color: #2ecc71;
-    box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.12);
+    border-color: #00ff8c;
+    box-shadow: 0 0 0 3px rgba(0, 255, 140, 0.12);
 }
 
 .player-table-section {
@@ -209,7 +222,7 @@ a:hover {
 
 
 .section-header h2 {
-    color: #00ff41;
+    color: #00ff8c;
     font-size: 1.25rem;
     margin: 0;
 }
@@ -236,7 +249,7 @@ a:hover {
 .match-section-header h2 {
     font-size: clamp(1.6rem, 2.5vw, 2.2rem);
     letter-spacing: -0.03em;
-    color: #00ff41;
+    color: #00ff8c;
 }
 
 .table-shell {
@@ -314,7 +327,7 @@ a:hover {
 }
 
 .team-pill:hover {
-    background: rgba(46, 204, 113, 0.12);
+    background: rgba(0, 255, 140, 0.12);
 }
 
 .team-icon {
@@ -332,14 +345,14 @@ a:hover {
     min-width: 84px;
     padding: 8px 14px;
     border-radius: 999px;
-    background: rgba(46, 204, 113, 0.12);
+    background: rgba(0, 255, 140, 0.12);
     color: #dffdf0;
     font-weight: 900;
     letter-spacing: 0.04em;
 }
 
 .score-badge.is-win {
-    background: rgba(46, 204, 113, 0.16);
+    background: rgba(0, 255, 140, 0.16);
     color: #7dffb0;
 }
 
@@ -361,7 +374,7 @@ a:hover {
 }
 
 .link-pill:hover {
-    background: rgba(77, 195, 255, 0.14);
+    background: rgba(0, 255, 140, 0.14);
 }
 
 .table-empty {
@@ -448,12 +461,12 @@ a:hover {
 }
 
 .sort-arrow {
-    color: #2ecc71;
+    color: #00ff8c;
     font-size: 0.8em;
 }
 
 .player-link {
-    color: #00ff41;
+    color: #00ff8c;
     text-decoration: none;
 }
 
@@ -471,7 +484,7 @@ a:hover {
 
 .page-button {
     padding: 10px 16px;
-    border: 1px solid rgba(46, 204, 113, 0.5);
+    border: 1px solid rgba(0, 255, 140, 0.5);
     background: transparent;
     color: #ffffff;
     cursor: pointer;
@@ -576,13 +589,13 @@ a:hover {
 .player-name {
     font-size: 2.5em;
     font-weight: bold;
-    color: #00ff41;
+    color: #00ff8c;
     margin-bottom: 10px;
 }
 
 .player-title {
     font-size: 1.2em;
-    color: #00ff41;
+    color: #00ff8c;
     margin-bottom: 20px;
 }
 
@@ -742,12 +755,12 @@ a:hover {
 }
 
 .compare-view-button.is-active {
-    background: #2ecc71;
+    background: #00ff8c;
     color: #0a0e27;
 }
 
 .graph-header h2 {
-    color: #00ff41;
+    color: #00ff8c;
     font-size: 1.5em;
     margin: 0;
 }
@@ -815,7 +828,7 @@ a:hover {
 }
 
 .heroes-label h2{
-    color: #00ff41;
+    color: #00ff8c;
     font-size: 1.5em;
     margin: 0;
 }
@@ -890,8 +903,87 @@ a:hover {
 
 .map-results-chart {
     display: grid;
-    gap: 16px;
-    margin-top: 15px;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.map-pill-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.map-pill {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.map-pill.has-map-background {
+    background: center / cover no-repeat var(--map-pill-bg-image);
+}
+
+.map-pill.has-map-background::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(10, 14, 39, 0.9) 0%, rgba(10, 14, 39, 0.72) 55%, rgba(10, 14, 39, 0.85) 100%);
+}
+
+.map-pill-badge {
+    position: relative;
+    z-index: 1;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: #0f1427;
+    color: #7dffb0;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.map-pill-icon {
+    position: relative;
+    z-index: 1;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: #0f1427;
+    object-fit: contain;
+    padding: 4px;
+    flex-shrink: 0;
+}
+
+.map-pill-content span {
+    position: relative;
+    z-index: 1;
+    color: #ffffff;
+    font-weight: 600;
+    display: block;
+}
+
+.map-pill-content strong {
+    position: relative;
+    z-index: 1;
+    color: #00ff8c;
+    display: block;
+    font-size: 0.95rem;
+}
+
+.map-pill-content small {
+    position: relative;
+    z-index: 1;
+    color: #a7b2ff;
+    font-size: 0.8rem;
 }
 
 .map-result-row {
@@ -983,7 +1075,7 @@ a:hover {
 }
 
 .graph-header h2 {
-    color: #00ff41;
+    color: #00ff8c;
     font-size: 1.5em;
     margin: 0;
 }
@@ -1048,7 +1140,7 @@ a:hover {
 }
 
 .filter-header h2 {
-    color: #00ff41;
+    color: #00ff8c;
     font-size: 1.2em;
     margin: 0;
 }
@@ -1101,7 +1193,7 @@ a:hover {
 }
 
 .filter-option input {
-    accent-color: #00ff41;
+    accent-color: #00ff8c;
 }
 
 .graph-collapse-toggle {

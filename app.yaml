@@ -1,11 +1,23 @@
-runtime: nodejs20
+runtime: nodejs24
 service: default
+
+build_env_variables:
+  GOOGLE_NODE_RUN_SCRIPTS: ''
 
 env_variables:
   NODE_ENV: "production"
+  AZURE_USER_SECRET: "azure-sql-user"
+  AZURE_PASSWORD_SECRET: "azure-sql-password"
+  AZURE_HOST_SECRET: "azure-sql-host"
+  AZURE_DATABASE_SECRET: "azure-sql-database"
+  AZURE_DRIVER : '{ODBC Driver 17 for SQL Server}'
 
 entrypoint: npm start
 
+vpc_access_connector:
+  name: projects/owcs-lab/locations/europe-west2/connectors/appengine-connector
+  egress_setting: all-traffic
+
 automatic_scaling:
   min_instances: 0
-  max_instances: 2
+  max_instances: 1

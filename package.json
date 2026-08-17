@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
+    "gcp-build": "",
     "test": "echo \"No tests configured\""
   },
   "keywords": [],
@@ -13,14 +14,13 @@
   "license": "ISC",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=24 <25"
   },
   "dependencies": {
+    "@google-cloud/secret-manager": "^6.1.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "http": "^0.0.1-security",
-    "mssql": "^12.7.0",
-    "mysql2": "^3.23.1"
+    "mssql": "^12.7.0"
   }
 }

@@ -39,6 +39,18 @@ function resolveAssetPath(value) {
         return `/${path}`;
 }
 
+function getModeIconPath(mode) {
+    const normalizedMode = String(mode || '').trim().toLowerCase();
+    if (!normalizedMode) return '';
+
+    const supportedModes = new Set(['control', 'escort', 'flashpoint', 'hybrid', 'push', 'clash']);
+    if (!supportedModes.has(normalizedMode)) {
+        return '';
+    }
+
+    return `/content/images/maps/modes/${encodeURIComponent(normalizedMode)}.webp`;
+}
+
 function buildTournamentQuery() {
     const params = new URLSearchParams({
         tournaments: selectedTournamentIds.join(','),
@@ -507,13 +519,13 @@ function renderStatChart(statName) {
                 {
                     label: `${statName.charAt(0).toUpperCase() + statName.slice(1)}`,
                     data: Data,
-                    borderColor: '#2ecc71',
-                    backgroundColor: 'rgba(46, 204, 113, 0.22)',
+                    borderColor: '#00ff8c',
+                    backgroundColor: 'rgba(0, 255, 140, 0.22)',
                     borderWidth: 3,
                     fill: true,
                     tension: 0.4,
-                    pointBackgroundColor: '#2ecc71',
-                    pointBorderColor: '#2ecc71',
+                    pointBackgroundColor: '#00ff8c',
+                    pointBorderColor: '#00ff8c',
                     pointRadius: 4,
                     pointHoverRadius: 6
                 }
@@ -528,7 +540,7 @@ function renderStatChart(statName) {
                 },
                 tooltip: {
                     backgroundColor: '#1a1f3a',
-                    borderColor: '#00ff41',
+                    borderColor: '#00ff8c',
                     borderWidth: 2,
                     titleColor: '#ffffff',
                     bodyColor: '#ffffff',
@@ -623,44 +635,38 @@ function renderMapResults() {
         ? groupMapsByMode(playerMapData)
         : sortMapsByWinRate(playerMapData);
 
-    const maxValue = Math.max(1, ...mapsToRender.flatMap(map => [map.won, map.drawn, map.lost]));
-    const resultTypes = [
-        { key: 'won', label: 'Won', color: '#2ecc71' },
-        { key: 'drawn', label: 'Draw', color: '#e7e294' },
-        { key: 'lost', label: 'Lost', color: '#e74c3c' }
-    ];
-
-    container.innerHTML = mapsToRender.map(map => {
+    const mapCards = mapsToRender.map(map => {
         const winRate = map.played ? Math.round((map.won / map.played) * 100) : 0;
-        const bars = resultTypes
-        .filter(result => result.key !== 'drawn' || map.drawn > 0)
-        .map(result => {
-            const value = map[result.key];
-            const width = Math.round((value / maxValue) * 100);
-
-            return `
-                <div class="map-result-bar-group" data-result-type="${result.label}">
-                    <span class="map-result-bar-name" style="color: ${result.color};">${result.label}</span>
-                    <div class="map-result-bar-track">
-                        <div class="map-result-bar-fill" style="width: ${width}%; background: ${result.color};"></div>
-                    </div>
-                    <div class="map-result-bar-value">${value}</div>
-                </div>
-            `;
-        }).join('');
+        const mapInitials = String(map.map || '?').trim().slice(0, 2).toUpperCase();
+        const useModeIcon = currentMapView === 'mode';
+        const rawIconPath = useModeIcon ? getModeIconPath(map.mode) : map.mapIcon;
+        const mapIconPath = resolveAssetPath(rawIconPath);
+        const iconMarkup = useModeIcon && mapIconPath
+            ? `<img src="${mapIconPath}" alt="${map.map}" class="map-pill-icon" loading="lazy">`
+            : '';
+        const fallbackBadge = iconMarkup
+            ? ''
+            : mapIconPath
+            ? ''
+            : `<div class="map-pill-badge" aria-hidden="true">${mapInitials || '?'}</div>`;
+        const mapBackgroundStyle = !useModeIcon && mapIconPath
+            ? ` style="--map-pill-bg-image: url('${mapIconPath.replace(/'/g, "%27")}')"`
+            : '';
 
         return `
-            <div class="map-result-row">
-                <div class="map-result-label">
+            <div class="map-pill${!useModeIcon && mapIconPath ? ' has-map-background' : ''}"${mapBackgroundStyle}>
+                ${iconMarkup}
+                ${fallbackBadge}
+                <div class="map-pill-content">
                     <span>${map.map}</span>
-                    <small class="comparison-subtext">Played ${map.played} · Win Rate ${winRate}%</small>
-                </div>
-                <div class="map-result-bars">
-                    ${bars}
+                    <strong>${winRate}% win rate</strong>
+                    <small>Played ${map.played} | Won ${map.won} | Draw ${map.drawn} | Lost ${map.lost}</small>
                 </div>
             </div>
         `;
     }).join('');
+
+    container.innerHTML = `<div class="map-pill-grid">${mapCards}</div>`;
 
     document.querySelectorAll('[data-map-view]').forEach(button => {
         button.classList.toggle('is-active', button.dataset.mapView === currentMapView);
@@ -672,6 +678,7 @@ function initializeMapChart(maps) {
     playerMapData = (maps || [])
         .map((map, index) => ({
             map: map.map || `Map ${index + 1}`,
+            mapIcon: map.map_icon || '',
             mode: map.mode || 'Unknown',
             played: Number.parseInt(map.played, 10) || 0,
             won: Number.parseInt(map.won, 10) || 0,
