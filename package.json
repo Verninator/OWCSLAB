@@ -1,0 +1,21 @@
+{
+  "name": "owcs-lab",
+  "version": "1.0.0",
+  "description": "OWCS stats website API and frontend",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node --watch server/server.js"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "dependencies": {
+    "@google-cloud/secret-manager": "^6.1.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "mssql": "^12.7.0"
+  }
+}

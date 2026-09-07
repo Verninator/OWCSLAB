@@ -1,6 +1,11 @@
 import mssql from 'mssql';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const databaseDir = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: join(databaseDir, '..', 'server', '.env') });
 dotenv.config();
 
 function parsePositiveInt(value, fallback) {
@@ -23,6 +28,8 @@ function firstDefined(...values) {
 
 const dbConnectTimeoutMs = parsePositiveInt(process.env.DB_CONNECT_TIMEOUT_MS, 180000);
 const dbRequestTimeoutMs = parsePositiveInt(process.env.DB_REQUEST_TIMEOUT_MS, 240000);
+const dbAcquireTimeoutMs = parsePositiveInt(process.env.DB_ACQUIRE_TIMEOUT_MS, 240000);
+const dbCreateTimeoutMs = parsePositiveInt(process.env.DB_CREATE_TIMEOUT_MS, dbConnectTimeoutMs);
 const dbConnectRetryAttempts = parsePositiveInt(process.env.DB_CONNECT_RETRY_ATTEMPTS, 6);
 const dbConnectRetryDelayMs = parsePositiveInt(process.env.DB_CONNECT_RETRY_DELAY_MS, 5000);
 
@@ -76,8 +83,8 @@ async function getDbSettings() {
             ['AZURE_PASSWORD_SECRET', 'DB_PASSWORD_SECRET', 'SQL_PASSWORD_SECRET']
         );
         const dbServer = await resolveValueFromEnvOrSecret(
-            ['AZURE_HOST', 'DB_HOST', 'SQL_HOST', 'SQL_SERVER'],
-            ['AZURE_HOST_SECRET', 'DB_HOST_SECRET', 'SQL_HOST_SECRET', 'SQL_SERVER_SECRET']
+            ['AZURE_HOST', 'AZURE_SERVER', 'DB_HOST', 'DB_SERVER', 'SQL_HOST', 'SQL_SERVER'],
+            ['AZURE_HOST_SECRET', 'AZURE_SERVER_SECRET', 'DB_HOST_SECRET', 'DB_SERVER_SECRET', 'SQL_HOST_SECRET', 'SQL_SERVER_SECRET']
         );
         const dbName = await resolveValueFromEnvOrSecret(
             ['AZURE_DATABASE', 'DB_NAME', 'SQL_DATABASE'],
@@ -162,6 +169,9 @@ async function getConnectedPool() {
 
     connectingPoolPromise = (async () => {
         const dbSettings = await getDbSettings();
+        if (typeof dbSettings.server !== 'string' || !dbSettings.server.trim()) {
+            throw new Error('Database server is missing. Set AZURE_HOST, DB_HOST, SQL_SERVER, or the corresponding *_SECRET variable.');
+        }
         const config = {
             ...dbSettings,
             authentication: {
@@ -173,7 +183,10 @@ async function getConnectedPool() {
             pool: {
                 max: 10,
                 min: 0,
-                idleTimeoutMillis: 30000
+                idleTimeoutMillis: 30000,
+                acquireTimeoutMillis: dbAcquireTimeoutMs,
+                createTimeoutMillis: dbCreateTimeoutMs,
+                destroyTimeoutMillis: dbConnectTimeoutMs
             },
             connectionTimeout: dbConnectTimeoutMs,
             requestTimeout: dbRequestTimeoutMs
@@ -900,19 +913,19 @@ export async function getTeamDetails(team_id) {
 }
 
 export async function getRoster(team_id){
-    let results = await pool.request().query(`
+    const teamResult = await pool.request().query(`
         SELECT team_id, name, circuit
         FROM teams
         WHERE team_id = ${team_id}
     `);
-    const team = results.recordset[0]
+    const team = teamResult.recordset[0]
     if (!team) {
         return [];
     }
 
     const isOwwcTeam = String(team.circuit || '').toLowerCase() === 'owwc';
     if (!isOwwcTeam) {
-        results =  await pool.request().query(`
+        const rosterResult = await pool.request().query(`
             SELECT
                 players.role,
                 players.name,
@@ -928,10 +941,10 @@ export async function getRoster(team_id){
                 AND players.active = 1
             ORDER BY players.role
         `);
-        return results.recordset;
+        return rosterResult.recordset;
     }
 
-    results = await pool.request().query(`
+    const rosterResult = await pool.request().query(`
         SELECT
             players.role,
             players.name,
@@ -949,7 +962,7 @@ export async function getRoster(team_id){
         ORDER BY players.role
     `);
 
-    return results.recordset;
+    return rosterResult.recordset;
 }
 
 export async function getTeamsWithRoster(circuit = 'all') {
