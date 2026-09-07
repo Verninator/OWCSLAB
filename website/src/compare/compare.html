@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compare Teams</title>
+    <link rel="stylesheet" href="compare.css">
+    <script src="compare.js" defer></script>
+</head>
+<body>
+    <header class="topbar">
+        <a href="/" class="topbar-brand topbar-home-link">
+            <div class="topbar-logo">Logo</div>
+            <span class="topbar-site-name">OWCS<span style="color: #00ff8c;">LAB</span></span>
+        </a>
+        <nav class="topbar-links">
+            <a href="/players" class="topbar-link">Players</a>
+            <a href="/teams" class="topbar-link">Teams</a>
+            <a href="/maps" class="topbar-link">Maps</a>
+            <a href="/compare" class="topbar-link">Compare</a>
+        </nav>
+    </header>
+
+    <main class="compare-page page-loading">
+        <div class="loading-placeholder" role="status" aria-label="Loading"><span class="loading-spinner" aria-hidden="true"></span></div>
+        <section class="compare-intro">
+            <h1>Team Comparison</h1>
+            <p>Select two teams to compare head-to-head map results, bans, matches, totals, and average metrics.</p>
+        </section>
+
+        <section class="compare-form-section">
+            <div class="compare-form-row">
+                <label for="teamA">Team A</label>
+                <div class="search-input-wrapper">
+                    <input id="teamA" type="search" placeholder="Search team..." autocomplete="off" spellcheck="false">
+                    <div class="team-suggestions" id="teamA-suggestions" aria-label="Team A suggestions"></div>
+                </div>
+            </div>
+            <div class="compare-form-row">
+                <label for="teamB">Team B</label>
+                <div class="search-input-wrapper">
+                    <input id="teamB" type="search" placeholder="Search team..." autocomplete="off" spellcheck="false">
+                    <div class="team-suggestions" id="teamB-suggestions" aria-label="Team B suggestions"></div>
+                </div>
+            </div>
+            <div class="filter-panel compare-filter-panel is-collapsed" id="filterPanel">
+                <button type="button" class="filter-toggle" id="filterToggle">Filter tournaments</button>
+                <div class="filter-panel-content">
+                    <div class="filter-header">
+                        <h2>Tournament Filter</h2>
+                        <div class="filter-mode-row">
+                            <label class="filter-mode-label" for="tournamentMode">Mode</label>
+                            <select id="tournamentMode" class="filter-mode-select">
+                                <option value="include">Include selected</option>
+                                <option value="exclude">Exclude selected</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="tournamentFilterOptions" class="filter-options"></div>
+                </div>
+            </div>
+            <button id="compareButton" class="primary-button">Compare</button>
+        </section>
+
+        <section id="compareResults" class="compare-results"></section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-left">
+                <div class="footer-logo">Logo</div>
+                <div>Discord: <a href="https://discord.com/users/1149620046147096627">Vern</a></div>
+                <div>Support Me: <a href="https://ko-fi.com/owcslab">Ko-fi<img src=""></a></div>
+            </div>
+            <div class="footer-links">
+                <a href="/api">Api</a>
+                <a href="/about">About</a>
+                <a href="/privacy">Privacy</a>
+                <a href="/terms">Terms</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

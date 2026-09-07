@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Players</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="players.js" defer></script>
+</head>
+<body>
+    <header class="topbar">
+        <a href="/" class="topbar-brand topbar-home-link">
+            <div class="topbar-logo">Logo</div>
+            <span class="topbar-site-name">OWCS<span style="color: #00ff8c;">LAB</span></span>
+        </a>
+        <nav class="topbar-links">
+            <a href="/players" class="topbar-link">Players</a>
+            <a href="/teams" class="topbar-link">Teams</a>
+            <a href="/maps" class="topbar-link">Maps</a>
+            <a href="/compare" class="topbar-link">Compare</a>
+        </nav>
+    </header>
+
+    <main class="page-content page-loading">
+        <div class="loading-placeholder" role="status" aria-label="Loading"><span class="loading-spinner" aria-hidden="true"></span></div>
+        <section class="player-list-intro">
+            <div>
+                <h1>Players</h1>
+                <p>Browse player stats and switch between total and average views. Use column headers to sort, and page through 20 players at a time.</p>
+            </div>
+        </section>
+
+        <section class="player-table-section">
+            <div class="section-header">
+                <h2 id="statsTitle">Total Stats</h2>
+                <div class="section-controls">
+                    <div class="table-view-toggle" role="group" aria-label="Stats view toggle">
+                        <button type="button" class="view-toggle-button is-active" data-view="total">Total</button>
+                        <button type="button" class="view-toggle-button" data-view="avg">Average</button>
+                    </div>
+                    <div class="table-view-toggle" role="group" aria-label="Filter toggle">
+                        <button type="button" class="view-toggle-button" id="statsFilterToggle" aria-expanded="false">Filter</button>
+                    </div>
+                    <div class="filter-panel stats-filter-panel is-collapsed" id="statsFilterPanel">
+                        <div class="filter-panel-content">
+                            <div class="stats-filters" id="statsFilters">
+                                <div class="filter-field">
+                                    <button type="button" class="filter-section-toggle" aria-expanded="true" aria-controls="tournamentFilterOptions">
+                                        <span>Tournament</span>
+                                        <span class="filter-section-caret" aria-hidden="true">▾</span>
+                                    </button>
+                                    <div class="filter-options filter-options-scroll" id="tournamentFilterOptions"></div>
+                                </div>
+                                <div class="filter-field">
+                                    <button type="button" class="filter-section-toggle" aria-expanded="true" aria-controls="stageFilterOptions">
+                                        <span>Stage</span>
+                                        <span class="filter-section-caret" aria-hidden="true">▾</span>
+                                    </button>
+                                    <div class="filter-options filter-options-scroll" id="stageFilterOptions"></div>
+                                </div>
+                                <div class="filter-field">
+                                    <button type="button" class="filter-section-toggle" aria-expanded="true" aria-controls="regionFilterOptions">
+                                        <span>Region</span>
+                                        <span class="filter-section-caret" aria-hidden="true">▾</span>
+                                    </button>
+                                    <div class="filter-options filter-options-scroll" id="regionFilterOptions"></div>
+                                </div>
+                                <div class="filter-field">
+                                    <button type="button" class="filter-section-toggle" aria-expanded="true" aria-controls="teamFilterOptions">
+                                        <span>Team</span>
+                                        <span class="filter-section-caret" aria-hidden="true">▾</span>
+                                    </button>
+                                    <div class="filter-options filter-options-scroll" id="teamFilterOptions"></div>
+                                </div>
+                                <div class="filter-field">
+                                    <button type="button" class="filter-section-toggle" aria-expanded="true" aria-controls="roleFilterOptions">
+                                        <span>Role</span>
+                                        <span class="filter-section-caret" aria-hidden="true">▾</span>
+                                    </button>
+                                    <div class="filter-options filter-options-scroll" id="roleFilterOptions"></div>
+                                </div>
+                                <div class="filter-field">
+                                    <button type="button" class="filter-section-toggle" aria-expanded="true" aria-controls="circuitFilterOptions">
+                                        <span>Circuits</span>
+                                        <span class="filter-section-caret" aria-hidden="true">▾</span>
+                                    </button>
+                                    <div class="filter-options filter-options-scroll" id="circuitFilterOptions"></div>
+                                </div>
+                                <button type="button" class="clear-filters-button" id="clearFiltersButton">Clear filters</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="section-meta" id="statsMeta"></div>
+                </div>
+            </div>
+            <div class="table-search">
+                <label for="statsSearch" id="statsSearchLabel">Search total stats</label>
+                <input id="statsSearch" type="search" placeholder="Search players, roles, teams...">
+            </div>
+            <table class="stats-table" id="statsTable">
+                <thead>
+                    <tr id="statsHeader"></tr>
+                </thead>
+                <tbody id="statsBody"></tbody>
+            </table>
+            <div class="pagination" id="statsPagination"></div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-left">
+                <div class="footer-logo">Logo</div>
+                <div>Discord: <a href="https://discord.com/users/1149620046147096627">Vern</a></div>
+                <div>Support Me: <a href="https://ko-fi.com/owcslab">Ko-fi<img src=""></a></div>
+            </div>
+            <div class="footer-links">
+                <a href="/api">Api</a>
+                <a href="/about">About</a>
+                <a href="/privacy">Privacy</a>
+                <a href="/terms">Terms</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

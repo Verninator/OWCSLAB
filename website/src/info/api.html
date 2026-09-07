@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API</title>
+    <link rel="stylesheet" href="/info/info.css">
+</head>
+<body>
+    <header class="topbar">
+        <a href="/" class="topbar-brand topbar-home-link">
+            <div class="topbar-logo">Logo</div>
+            <span class="topbar-site-name">OWCS<span style="color: #00ff8c;">LAB</span></span>
+        </a>
+        <nav class="topbar-links">
+            <a href="/players" class="topbar-link">Players</a>
+            <a href="/teams" class="topbar-link">Teams</a>
+            <a href="/maps" class="topbar-link">Maps</a>
+            <a href="/compare" class="topbar-link">Compare</a>
+        </nav>
+    </header>
+
+    <main class="info-page">
+        <section class="info-header">
+            <h1>API</h1>
+            <p>Access Overwatch esports statistics for players, teams, maps, tournaments, matches, and comparisons.</p>
+        </section>
+
+        <section class="info-panel">
+            <h2>Base URL</h2>
+            <pre><code>http://owcslab.co.uk</code></pre>
+        </section>
+
+        <section class="info-panel">
+            <h2>Homepage</h2>
+            <pre><code>GET /api/home</code></pre>
+            <p>Returns match totals, player-stat totals, and the latest matches.</p>
+        </section>
+
+        <section class="info-panel">
+            <h2>Players</h2>
+            <pre><code>GET /api/players
+GET /api/players/filters
+GET /api/players/:name</code></pre>
+            <p>The player list accepts filters for tournaments, stages, regions, teams, roles, and circuits. Player detail requests also support tournament filters.</p>
+        </section>
+
+        <section class="info-panel">
+            <h2>Teams</h2>
+            <pre><code>GET /api/teams
+GET /api/teams/:name
+GET /api/compare/teams</code></pre>
+            <p>Use <code>circuit=owcs</code>, <code>circuit=owwc</code>, or <code>circuit=all</code> with the team list endpoint.</p>
+        </section>
+
+        <section class="info-panel">
+            <h2>Maps</h2>
+            <pre><code>GET /api/maps
+GET /api/maps/:name</code></pre>
+            <p>Map detail responses include ban statistics and team win-rate data.</p>
+        </section>
+
+        <section class="info-panel">
+            <h2>Tournaments</h2>
+            <pre><code>GET /api/tournaments</code></pre>
+            <p>Results can be scoped with <code>player</code>, <code>playerId</code>, <code>team</code>, <code>teamId</code>, or <code>map</code>.</p>
+        </section>
+
+        <section class="info-panel">
+            <h2>Team comparison</h2>
+            <pre><code>GET /api/compare?teamA=12&amp;teamB=34</code></pre>
+            <p>Returns head-to-head results, match history, team totals, map comparisons, and ban statistics. Optional filters use <code>tournaments</code> and <code>tournamentMode</code>.</p>
+        </section>
+
+        <section class="info-panel">
+            <h2>Examples</h2>
+            <pre><code>GET /api/players?role=Support&amp;region=EMEA
+GET /api/teams?circuit=owcs
+GET /api/tournaments?teamId=12
+GET /api/compare?teamA=12&amp;teamB=34&amp;tournaments=5,9&amp;tournamentMode=include</code></pre>
+            <p>Successful requests return JSON. Errors return a JSON object with an <code>error</code> message and an appropriate HTTP status code.</p>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-left">
+                <div class="footer-logo">Logo</div>
+                <div>Discord: <a href="https://discord.com/users/1149620046147096627">Vern</a></div>
+                <div>Support Me: <a href="https://ko-fi.com/owcslab">Ko-fi<img src=""></a></div>
+            </div>
+            <div class="footer-links">
+                <a href="/api">Api</a>
+                <a href="/about">About</a>
+                <a href="/privacy">Privacy</a>
+                <a href="/terms">Terms</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

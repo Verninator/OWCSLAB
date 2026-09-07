@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teams</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="teams.js" defer></script>
+</head>
+<body>
+    <header class="topbar">
+        <a href="/" class="topbar-brand topbar-home-link">
+            <div class="topbar-logo">Logo</div>
+            <span class="topbar-site-name">OWCS<span style="color: #00ff8c;">LAB</span></span>
+        </a>
+        <nav class="topbar-links">
+            <a href="/players" class="topbar-link">Players</a>
+            <a href="/teams" class="topbar-link">Teams</a>
+            <a href="/maps" class="topbar-link">Maps</a>
+            <a href="/compare" class="topbar-link">Compare</a>
+        </nav>
+    </header>
+
+    <main class="team-list-page page-loading">
+        <div class="loading-placeholder" role="status" aria-label="Loading"><span class="loading-spinner" aria-hidden="true"></span></div>
+        <section class="player-list-intro">
+            <div>
+                <h1>Teams</h1>
+                <p>Browse teams grouped by region. Expand each roster box to see players and roles, with direct links to player profiles.</p>
+            </div>
+        </section>
+
+        <section class="teams-tabs" aria-label="Team competition tabs">
+            <button type="button" class="teams-tab is-active" data-circuit="owcs">OWCS Teams</button>
+            <button type="button" class="teams-tab" data-circuit="owwc">OWWC Teams</button>
+        </section>
+
+        <div id="teamsContainer"></div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-left">
+                <div class="footer-logo">Logo</div>
+                <div>Discord: <a href="https://discord.com/users/1149620046147096627">Vern</a></div>
+                <div>Support Me: <a href="https://ko-fi.com/owcslab">Ko-fi<img src=""></a></div>
+            </div>
+            <div class="footer-links">
+                <a href="/api">Api</a>
+                <a href="/about">About</a>
+                <a href="/privacy">Privacy</a>
+                <a href="/terms">Terms</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

@@ -22,7 +22,7 @@ function firstDefined(...values) {
 }
 
 const dbConnectTimeoutMs = parsePositiveInt(process.env.DB_CONNECT_TIMEOUT_MS, 180000);
-const dbRequestTimeoutMs = parsePositiveInt(process.env.DB_REQUEST_TIMEOUT_MS, 180000);
+const dbRequestTimeoutMs = parsePositiveInt(process.env.DB_REQUEST_TIMEOUT_MS, 240000);
 const dbConnectRetryAttempts = parsePositiveInt(process.env.DB_CONNECT_RETRY_ATTEMPTS, 6);
 const dbConnectRetryDelayMs = parsePositiveInt(process.env.DB_CONNECT_RETRY_DELAY_MS, 5000);
 
@@ -331,6 +331,7 @@ export async function getHeadtoHead(teamAId,teamBId, tournamentIds = [], mode = 
         SUM(CASE WHEN ts.result = 'Win' THEN 1 ELSE 0 END) AS wins,
         SUM(CASE WHEN ts.result = 'Loss' THEN 1 ELSE 0 END) AS losses,
         SUM(CASE WHEN ts.result = 'Draw' THEN 1 ELSE 0 END) AS draws,
+        SUM(CASE WHEN ts.map_pick = 1 THEN 1 ELSE 0 END) AS map_pick_count,
         COUNT(*) AS played
         FROM team_stats ts
         INNER JOIN maps m ON ts.map_id = m.map_id
@@ -356,8 +357,8 @@ export async function getHeadtoHeadMatches(teamAId,teamBId, tournamentIds = [], 
     .input('teamBId', mssql.Int, normalizedTeamBId)
     .query(`
         SELECT m.match_id, m.date, m.team_1_id, t1.name AS team_1_name, t1.icon AS team_1_icon,
-            m.team_1_score, m.team_2_id, t2.name AS team_2_name, t2.icon AS team_2_icon, m.team_2_score,
-            tor.name AS tournament, tor.icon AS tournament_icon, m.ref_link
+        m.team_1_score, m.team_2_id, t2.name AS team_2_name, t2.icon AS team_2_icon, m.team_2_score,
+        tor.name AS tournament, tor.icon AS tournament_icon,tor.ref_link AS tournament_link, m.ref_link
         FROM matches m
         INNER JOIN teams t1 ON m.team_1_id = t1.team_id
         INNER JOIN teams t2 ON m.team_2_id = t2.team_id
@@ -450,7 +451,7 @@ export async function getTeamIdFromPlayer(player_id){
 
 export async function getPlayerDetails(player_id) {
     const results =  await pool.request().query(`
-        SELECT players.name as name, players.role as role, teams.name as team, teams.icon as team_icon, national_team.icon AS owwc_team_icon, NULL AS owwc_team_icon
+        SELECT players.name as name, players.role as role, teams.name as team, teams.icon as team_icon, national_team.icon AS owwc_team_icon, national_team.name AS owwc_team_name
         FROM players
         LEFT JOIN
         teams
@@ -494,7 +495,7 @@ export async function getMatchesById(team_id, tournamentIds = [], mode = 'includ
     const results =  await pool.request().query(`
         SELECT *
         FROM (
-            SELECT tournaments.name as tournament, tournaments.icon as tournament_icon,matches.date,
+            SELECT tournaments.name as tournament, tournaments.icon as tournament_icon, tournaments.ref_link as tournament_link ,matches.date,
             team_2.name as opponent, team_2.icon as opponent_icon,  matches.team_1_score as team_score,
             matches.team_2_score as opponent_score,
             matches.ref_link
@@ -507,7 +508,7 @@ export async function getMatchesById(team_id, tournamentIds = [], mode = 'includ
             ON team_2.team_id = matches.team_2_id
             WHERE team_1_id = ${team_id} ${whereClause}
             UNION
-            SELECT tournaments.name as tournament, tournaments.icon as tournament_icon,matches.date,
+            SELECT tournaments.name as tournament, tournaments.icon as tournament_icon, tournaments.ref_link as tournament_link ,matches.date,
             team_1.name as opponent, team_1.icon as opponent_icon,  matches.team_2_score as team_score,
             matches.team_1_score as opponent_score,
             matches.ref_link
@@ -532,10 +533,11 @@ export async function getPlayerMatchesById(player_id, tournamentIds = [], mode =
     const { clause, values } = buildTournamentFilterClause('matches.tournament_id', tournamentIds, mode);
     const whereClause = clause ? `AND ${clause}` : '';
     const results =  await pool.request().query(`
-        SELECT tournament, tournament_icon, date, team_name, team_icon, opponent, opponent_icon, team_score, opponent_score, ref_link
+        SELECT tournament, tournament_icon ,tournament_link , date, team_name, team_icon, opponent, opponent_icon, team_score, opponent_score, ref_link
         FROM (
             SELECT tournaments.name AS tournament,
                 tournaments.icon AS tournament_icon,
+                tournaments.ref_link as tournament_link ,
                 matches.date,
                 player_team.name AS team_name,
                 player_team.icon AS team_icon,
@@ -625,7 +627,6 @@ export async function getPlayerStats(player_id, tournamentIds = [], mode = 'incl
 export async function getTotalStats(player_id, tournamentIds = [], mode = 'include') {
     const { clause, values } = buildTournamentFilterClause('matches.tournament_id', tournamentIds, mode);
     const joinClause = clause ? `INNER JOIN matches ON matches.match_id = player_stats.match_id AND ${clause}` : 'INNER JOIN matches ON matches.match_id = player_stats.match_id';
-    console.log("hi")
     const results =  await pool.request().query(`
         SELECT SUM(eliminations) as eliminations, SUM(assists) as assists, SUM(deaths) as deaths, SUM(damage) as damage, SUM(healing) as healing, SUM(mitigation) as mitigation
         FROM player_stats
@@ -651,36 +652,174 @@ export async function getAvgStats(player_id, tournamentIds = [], mode = 'include
     return results.recordset[0]; 
 }
 
-export async function getPlayerList() {
+export async function getPlayerList(filters = {}) {
+    const request = pool.request();
+    const statClauses = [];
+    const playerClauses = [];
 
-    const results = await pool.request().query(`
+    const parseCsv = (value) => {
+        if (Array.isArray(value)) {
+            return value.map(entry => String(entry || '').trim()).filter(Boolean);
+        }
+        return String(value || '')
+            .split(',')
+            .map(entry => entry.trim())
+            .filter(Boolean);
+    };
+
+    const parsePositiveIntList = (value) => parseCsv(value)
+        .map(entry => Number(entry))
+        .filter(entry => Number.isInteger(entry) && entry > 0);
+
+    const addInClause = (clauses, columnName, values, paramPrefix, typeFactory) => {
+        if (!values.length) return;
+        const placeholders = values.map((value, index) => {
+            const paramName = `${paramPrefix}${index}`;
+            request.input(paramName, typeFactory(), value);
+            return `@${paramName}`;
+        });
+        clauses.push(`${columnName} IN (${placeholders.join(', ')})`);
+    };
+
+    const tournamentIds = parsePositiveIntList(filters.tournamentIds);
+    addInClause(statClauses, 'ps.tournament_id', tournamentIds, 'tournamentId', () => mssql.Int);
+
+    const stages = parsePositiveIntList(filters.stages);
+    addInClause(statClauses, 't.stage', stages, 'stage', () => mssql.Int);
+
+    const regions = parseCsv(filters.regions);
+    addInClause(statClauses, 't.region', regions, 'region', () => mssql.VarChar(255));
+
+    const teamIds = parsePositiveIntList(filters.teamIds);
+    addInClause(statClauses, 'ps.team_id', teamIds, 'teamId', () => mssql.Int);
+
+    const roles = parseCsv(filters.roles);
+    addInClause(playerClauses, 'p.role', roles, 'role', () => mssql.VarChar(50));
+
+    const circuits = parseCsv(filters.circuits)
+    addInClause(statClauses, 't.circuit', circuits, 'circuit', () => mssql.VarChar(50));
+
+
+    const statsWhereClause = statClauses.length ? `WHERE ${statClauses.join(' AND ')}` : '';
+    const playersWhereClause = playerClauses.length ? `WHERE ${playerClauses.join(' AND ')}` : '';
+    const hasStatFilters = tournamentIds.length || stages.length || regions.length || teamIds.length || circuits.length;
+    const havingClause = hasStatFilters ? 'HAVING COUNT(fps.player_id) > 0' : '';
+
+    const results = await request.query(`
+        WITH filtered_player_stats AS (
+            SELECT
+                ps.player_id,
+                ps.eliminations,
+                ps.assists,
+                ps.deaths,
+                ps.damage,
+                ps.healing,
+                ps.mitigation
+            FROM player_stats ps
+            INNER JOIN tournaments t
+                ON t.tournament_id = ps.tournament_id
+            ${statsWhereClause}
+        )
         SELECT
             p.name,
             p.role,
             COALESCE(primary_team.name, national_team.name) as team,
             COALESCE(primary_team.icon, national_team.icon) as team_icon,
-            COALESCE(SUM(ps.eliminations), 0) as total_eliminations,
-            COALESCE(SUM(ps.assists), 0) as total_assists,
-            COALESCE(SUM(ps.deaths), 0) as total_deaths,
-            COALESCE(SUM(ps.damage), 0) as total_damage,
-            COALESCE(SUM(ps.healing), 0) as total_healing,
-            COALESCE(SUM(ps.mitigation), 0) as total_mitigation,
-            COALESCE(AVG(ps.eliminations), 0) as avg_eliminations,
-            COALESCE(AVG(ps.assists), 0) as avg_assists,
-            COALESCE(AVG(ps.deaths), 0) as avg_deaths,
-            COALESCE(AVG(ps.damage), 0) as avg_damage,
-            COALESCE(AVG(ps.healing), 0) as avg_healing,
-            COALESCE(AVG(ps.mitigation), 0) as avg_mitigation
+            primary_team.name as primary_team_name,
+            national_team.name as national_team_name,
+            COALESCE(SUM(fps.eliminations), 0) as total_eliminations,
+            COALESCE(SUM(fps.assists), 0) as total_assists,
+            COALESCE(SUM(fps.deaths), 0) as total_deaths,
+            COALESCE(SUM(fps.damage), 0) as total_damage,
+            COALESCE(SUM(fps.healing), 0) as total_healing,
+            COALESCE(SUM(fps.mitigation), 0) as total_mitigation,
+            COALESCE(AVG(fps.eliminations), 0) as avg_eliminations,
+            COALESCE(AVG(fps.assists), 0) as avg_assists,
+            COALESCE(AVG(fps.deaths), 0) as avg_deaths,
+            COALESCE(AVG(fps.damage), 0) as avg_damage,
+            COALESCE(AVG(fps.healing), 0) as avg_healing,
+            COALESCE(AVG(fps.mitigation), 0) as avg_mitigation
         FROM players p
-        LEFT JOIN player_stats ps
-            ON ps.player_id = p.player_id
+        LEFT JOIN filtered_player_stats fps
+            ON fps.player_id = p.player_id
         LEFT JOIN teams primary_team
             ON p.team_id = primary_team.team_id
-        LEFT JOIN teams national_team ON p.national_team = national_team.team_id
+        LEFT JOIN teams national_team
+            ON p.national_team = national_team.team_id
+        ${playersWhereClause}
         GROUP BY p.player_id, p.name, p.role, primary_team.name, primary_team.icon, national_team.name, national_team.icon
+        ${havingClause}
         ORDER BY p.name ASC
     `);
     return results.recordset;
+}
+
+export async function getPlayerListFilterOptions() {
+    const [tournamentsResult, stagesResult, regionsResult, teamsResult, rolesResult, facetsResult] = await Promise.all([
+        pool.request().query(`
+            SELECT tournament_id, name, stage, region
+            FROM tournaments
+            ORDER BY name ASC
+        `),
+        pool.request().query(`
+            SELECT DISTINCT stage
+            FROM tournaments
+            WHERE stage IS NOT NULL
+            ORDER BY stage ASC
+        `),
+        pool.request().query(`
+            SELECT DISTINCT region
+            FROM tournaments
+            WHERE region IS NOT NULL AND LTRIM(RTRIM(region)) <> ''
+            ORDER BY region ASC
+        `),
+        pool.request().query(`
+            SELECT team_id, name
+            FROM teams
+            ORDER BY name ASC
+        `),
+        pool.request().query(`
+            SELECT DISTINCT role
+            FROM players
+            WHERE role IS NOT NULL AND LTRIM(RTRIM(role)) <> ''
+            ORDER BY role ASC
+        `),
+        pool.request().query(`
+            SELECT DISTINCT
+                ps.tournament_id AS tournament_id,
+                t.name AS tournament_name,
+                t.stage AS stage,
+                t.region AS region,
+                t.circuit AS circuit, 
+                ps.team_id AS team_id,
+                team.name AS team_name,
+                p.role AS role
+            FROM player_stats ps
+            INNER JOIN tournaments t
+                ON t.tournament_id = ps.tournament_id
+            INNER JOIN players p
+                ON p.player_id = ps.player_id
+            LEFT JOIN teams team
+                ON team.team_id = ps.team_id
+            WHERE ps.tournament_id IS NOT NULL
+                AND t.stage IS NOT NULL
+                AND t.region IS NOT NULL
+                AND LTRIM(RTRIM(t.region)) <> ''
+                AND ps.team_id IS NOT NULL
+                AND p.role IS NOT NULL
+                AND LTRIM(RTRIM(p.role)) <> ''
+        `)
+    ]);
+
+    return {
+        tournaments: tournamentsResult.recordset,
+        stages: stagesResult.recordset.map(row => row.stage),
+        regions: regionsResult.recordset.map(row => row.region),
+        teams: teamsResult.recordset,
+        roles: rolesResult.recordset.map(row => row.role),
+        circuits : ['OWCS', 'OWWC'],
+        facets: facetsResult.recordset
+    };
 }
 
 export async function getPlayerMapStats(player_id, tournamentIds = [], mode = 'include') {
@@ -708,6 +847,7 @@ export async function getPlayerMapStats(player_id, tournamentIds = [], mode = 'i
     );
     return results.recordset; 
 }
+
 
 export async function getPreferredHeroes(player_id) {
     const results =  await pool.request().query(`
@@ -760,7 +900,7 @@ export async function getTeamDetails(team_id) {
 }
 
 export async function getRoster(team_id){
-    const results = await pool.request().query(`
+    let results = await pool.request().query(`
         SELECT team_id, name, circuit
         FROM teams
         WHERE team_id = ${team_id}
@@ -772,7 +912,7 @@ export async function getRoster(team_id){
 
     const isOwwcTeam = String(team.circuit || '').toLowerCase() === 'owwc';
     if (!isOwwcTeam) {
-        const results =  await pool.request().query(`
+        results =  await pool.request().query(`
             SELECT
                 players.role,
                 players.name,
@@ -916,10 +1056,10 @@ export async function getMapTeamStats(map_id, tournamentIds = [], mode = 'includ
     const whereClause = clause ? `AND ${clause}` : '';
     const results = await pool.request().query(`
             SELECT t.team_id, t.name AS team_name, t.icon AS team_icon,
-                SUM(CASE WHEN ts.result = 'Win' THEN 1 ELSE 0 END) AS wins,
-                SUM(CASE WHEN ts.result = 'Draw' THEN 1 ELSE 0 END) AS draws,
-                SUM(CASE WHEN ts.result = 'Loss' THEN 1 ELSE 0 END) AS losses,
-                COUNT(*) AS played
+            SUM(CASE WHEN ts.result = 'Win' THEN 1 ELSE 0 END) AS wins,
+            SUM(CASE WHEN ts.result = 'Draw' THEN 1 ELSE 0 END) AS draws,
+            SUM(CASE WHEN ts.result = 'Loss' THEN 1 ELSE 0 END) AS losses,
+            COUNT(*) AS played
             FROM team_stats ts
             INNER JOIN teams t ON ts.team_id = t.team_id
             WHERE ts.map_id = ${map_id} AND t.active = 1 ${whereClause}
@@ -938,6 +1078,7 @@ export async function getTeamMapStats(team_id, tournamentIds = [], mode = 'inclu
     m.icon as map_icon,
     m.mode as mode,
     COUNT(t.map_id) as played,
+    SUM(CASE WHEN t.map_pick = 1 THEN 1 ELSE 0 END) AS map_pick_count,
     SUM(CASE WHEN  t.result = 'Win' THEN 1 ELSE 0 END) won, 
     SUM(CASE WHEN t.result = 'Draw' THEN 1 ELSE 0 END) drawn, 
     SUM(CASE WHEN t.result = 'Loss' THEN 1 ELSE 0 END) lost
@@ -966,14 +1107,17 @@ export async function getBanStats(team_id, tournamentIds = [], mode = 'include')
     heroes.role as hero_role,
     SUM(bans.bansFor) as bansFor,
     SUM(bans.bansAgainst) as bansAgainst,
-    SUM(bans.bansFor) + SUM(bans.bansAgainst) as played
+    SUM(bans.bansFor) + SUM(bans.bansAgainst) as played,
+    AVG(bans.winrate) as winrate
     FROM (
-    SELECT ban_id as hero_id, COUNT(*) as bansFor, 0 as bansAgainst
+    SELECT ban_id as hero_id, COUNT(*) as bansFor, 0 as bansAgainst,
+    SUM(CASE WHEN result='win' THEN 1 ELSE 0 END)*100/COUNT(*) AS winrate
     FROM team_stats
     WHERE team_id = ${team_id} AND ban_id IS NOT NULL ${whereClause}
     GROUP BY ban_id
     UNION ALL
-    SELECT opponent_ban_id as hero_id, 0 as bansFor, COUNT(*) as bansAgainst
+    SELECT opponent_ban_id as hero_id, 0 as bansFor, COUNT(*) as bansAgainst,
+    SUM(CASE WHEN result='win' THEN 1 ELSE 0 END)*100/COUNT(*) AS winrate
     FROM team_stats
     WHERE team_id = ${team_id} AND opponent_ban_id IS NOT NULL ${whereClause}
     GROUP BY opponent_ban_id
@@ -988,11 +1132,36 @@ export async function getBanStats(team_id, tournamentIds = [], mode = 'include')
     return results.recordset; 
 }
 
+export async function getBanResults(team_id, tournamentIds = [], mode = 'include') {
+    const { clause, values } = buildTournamentFilterClause('team_stats.tournament_id', tournamentIds, mode);
+    const whereClause = clause ? `AND ${clause}` : '';
+    const results =  await pool.request().query(`
+    SELECT
+    h.name as hero,
+    h.mode as role,
+    COUNT(h.hero_id) as played,
+    SUM(CASE WHEN  t.result = 'Win' THEN 1 ELSE 0 END) won, 
+    SUM(CASE WHEN t.result = 'Draw' THEN 1 ELSE 0 END) drawn, 
+    SUM(CASE WHEN t.result = 'Loss' THEN 1 ELSE 0 END) lost
+    FROM team_stats as t
+    INNER JOIN 
+    heroes as h
+    ON m.map_id = t.map_id
+    WHERE t.team_id = ${team_id}
+    ${whereClause}
+    GROUP BY t.map_id,m.name, m.icon, m.mode
+    ORDER BY played DESC 
+    `,
+    [...values]
+    );
+    return results.recordset; 
+}
+
 export async function getRecentTournaments(team_id, tournamentIds = [], mode = 'include') {
     const { clause, values } = buildTournamentFilterClause('placements.tournament_id', tournamentIds, mode);
     const whereClause = clause ? `AND ${clause}` : '';
     const results =  await pool.request().query(`
-    SELECT tournaments.icon, tournaments.name, tournaments.start_date, tournaments.end_date, placements.placement
+    SELECT tournaments.icon, tournaments.name, tournaments.start_date, tournaments.end_date, tournaments.ref_link, placements.placement
     FROM placements
     INNER JOIN
     tournaments

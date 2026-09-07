@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Profile</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="script.js"></script>
+</head>
+<body>
+    <header class="topbar">
+        <a href="/" class="topbar-brand topbar-home-link">
+            <div class="topbar-logo">Logo</div>
+            <span class="topbar-site-name">OWCS<span style="color: #00ff8c;">LAB</span></span>
+        </a>
+        <nav class="topbar-links">
+            <a href="/players" class="topbar-link">Players</a>
+            <a href="/teams" class="topbar-link">Teams</a>
+            <a href="/maps" class="topbar-link">Maps</a>
+            <a href="/compare" class="topbar-link">Compare</a>
+        </nav>
+    </header>
+    <div class="container page-loading">
+        <div class="loading-placeholder" role="status" aria-label="Loading"><span class="loading-spinner" aria-hidden="true"></span></div>
+        <!-- Player Header Section -->
+        <div class="profile-header">
+            <div class="filter-panel player-header-filter is-collapsed" id="filterPanel">
+                <button type="button" class="filter-toggle" id="filterToggle">Filter</button>
+                <div class="filter-panel-content">
+                    <div class="filter-header">
+                        <h2>Tournament Filter</h2>
+                        <div class="filter-mode-row">
+                            <label class="filter-mode-label" for="tournamentMode">Mode</label>
+                            <select id="tournamentMode" class="filter-mode-select">
+                                <option value="include">Include selected</option>
+                                <option value="exclude">Exclude selected</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="tournamentFilterOptions" class="filter-options"></div>
+                </div>
+            </div>
+
+            <div class="player-info">
+                <div>
+                    <div class="player-name-section">
+                       
+                        <div class="team-logo-container">
+                            <a id="teamLink" class="team-link" href="#">
+                                <img src="" alt="Team Logo" class="team-logo" id="teamLogo">
+                                <p class="team-name" id="teamName"></p>
+                            </a>
+                        </div>
+                        <div class="owwc-team-logo-container is-hidden" id="owwcTeamContainer">
+                            <a id="owwcTeamLink" class="team-link" href="#">
+                                <img src="" alt="OWWC Team Logo" class="owwc-team-logo" id="owwcTeamLogo">
+                                <p class="team-name" id="owwcTeamName"></p>
+                            </a>
+                        </div>
+                        <h1 class="player-name" id="playerName"></h1>
+                        <img src="" alt="Role" class="role-icon" id="roleIcon">
+                    </div>
+                </div>
+
+                <div class="stats-cards-container">
+                    <div class="stats-card">
+                        <div class="stats-grid">
+                            <div class="stat">
+                                <span class="stat-label">Total Eliminations</span>
+                                <span class="stat-value" id="totalEliminations">0</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Total Assists</span>
+                                <span class="stat-value" id="totalAssists">0</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Total Deaths</span>
+                                <span class="stat-value" id="totalDeaths">0</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Total Damage</span>
+                                <span class="stat-value" id="totalDamage">0</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Total Healing</span>
+                                <span class="stat-value" id="totalHealing">0</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Total Mitigation</span>
+                                <span class="stat-value" id="totalMitigation">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stats-card">
+                        <div class="stats-grid">
+                            <div class="stat">
+                                <span class="stat-label">Avg Eliminations</span>
+                                <span class="stat-value" id="avgEliminations">0</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Avg Assists</span>
+                                <span class="stat-value" id="avgAssists">0</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Avg Deaths</span>
+                                <span class="stat-value" id="avgDeaths">0</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Avg Damage</span>
+                                <span class="stat-value" id="avgDamage">0</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Avg Healing</span>
+                                <span class="stat-value" id="avgHealing">0</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Avg Mitigation</span>
+                                <span class="stat-value" id="avgMitigation">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Graph Section -->
+        <div class="stats-graph-section">
+            <div class="graph-header">
+                <h2>Stats Over Time</h2>
+                <div class="stat-selector">
+                    <button type="button" class="filter-toggle filter-toggle-secondary" data-filter-toggle aria-expanded="false">Filter</button>
+                    <select id="statSelect" class="stat-dropdown">
+                        <option value="eliminations">Eliminations</option>
+                        <option value="assists">Assists</option>
+                        <option value="deaths">Deaths</option>
+                        <option value="damage">Damage</option>
+                        <option value="healing">Healing</option>
+                        <option value="mitigation">Mitigation</option>
+                    </select>
+                </div>
+            </div>
+            <div class="graph-container">
+                <canvas id="statsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Match History Section -->
+        <section class="recent-section">
+            <div class="match-section-header">
+                <div>
+                    <h2>Recent Matches</h2>
+                </div>
+                <button type="button" class="filter-toggle filter-toggle-secondary" data-filter-toggle aria-expanded="false">Filter</button>
+            </div>
+
+            <div class="table-shell">
+                <table class="matches-table">
+                    <thead>
+                        <tr>
+                            <th>Tournament</th>
+                            <th>Date</th>
+                            <th>Matchup</th>
+                            <th>Score</th>
+                            <th>Link</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentMatchesBody">
+                        <tr>
+                            <td colspan="5" class="table-empty">Loading recent matches...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    
+        <!-- Hero Profile Section-->
+        <div class="heroes-section">
+            <div class="heroes-label">
+                <h2>Preferred Heroes</h2>
+            </div>
+            <div class="heroes-grid" id="heroesContainer">
+                <div class="hero-card">
+                    <img src="" alt="Hero 1" class="hero-image">
+                    <div class="hero-name">Hero One</div>
+                </div>
+                <div class="hero-card">
+                    <img src="" alt="Hero 2" class="hero-image">
+                    <div class="hero-name">Hero Two</div>
+                </div>
+                <div class="hero-card">
+                    <img src="" alt="Hero 3" class="hero-image">
+                    <div class="hero-name">Hero Three</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map Graph Section -->
+        <div class="map-graph-section">
+            <div class="graph-header">
+                <h2>Maps</h2>
+                <div class="graph-header-actions">
+                    <button type="button" class="filter-toggle filter-toggle-secondary" data-filter-toggle aria-expanded="false">Filter</button>
+                    <div class="compare-view-toggle" role="group" aria-label="Map results grouping">
+                        <button type="button" class="compare-view-button is-active" data-map-view="map">Map</button>
+                        <button type="button" class="compare-view-button" data-map-view="mode">Mode</button>
+                    </div>
+                    <select class="graph-collapse-toggle map-sort-select" id="mapSortSelect" aria-label="Map results order">
+                        <option value="" disabled selected hidden>Sort By</option>
+                        <option value="name">Map Name</option>
+                        <option value="winrate">Win Rate</option>
+                        <option value="played">Played</option>
+                    </select>
+                    <button type="button" class="graph-collapse-toggle" data-map-collapse-toggle aria-expanded="true" aria-controls="mapChart">Collapse</button>
+                </div>
+            </div>
+            <div class="map-results-chart" id="mapChart"></div>
+        </div>
+
+
+        <!-- End of Main Content -->
+    </div>
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-left">
+                <div class="footer-logo">Logo</div>
+                <div>Discord: <a href="https://discord.com/users/1149620046147096627">Vern</a></div>
+                <div>Support Me: <a href="https://ko-fi.com/owcslab">Ko-fi<img src=""></a></div>
+            </div>
+            <div class="footer-links">
+                <a href="/api">Api</a>
+                <a href="/about">About</a>
+                <a href="/privacy">Privacy</a>
+                <a href="/terms">Terms</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
